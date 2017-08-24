@@ -1,1 +1,2 @@
-#from hpaste import *
+from hpaste import *
+from hpasteweb import *

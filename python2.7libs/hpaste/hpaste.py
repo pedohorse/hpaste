@@ -112,7 +112,7 @@ def stringToNodes(s, hou_parent=None):
 	try:
 		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)))
 	except Exception as e:
-		print("input data is either corrupted or just not a nodecode: " + e.message)
+		print("input data is either corrupted or just not a nodecode: " + str(e.message))
 		return
 
 	# check version

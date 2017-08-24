@@ -8,6 +8,8 @@
   <toolshelf name="hpaste_shelf" label="HPaste">
     <memberTool name="hcopy"/>
     <memberTool name="hpaste"/>
+    <memberTool name="hcopyweb"/>
+    <memberTool name="hpasteweb"/>
   </toolshelf>
 
   <tool name="hcopy" label="HCopy" icon="PLASMA_App">
@@ -26,12 +28,45 @@ QtWidgets.qApp.clipboard().setText(s)]]></script>
 import hpaste
 
 s=QtWidgets.qApp.clipboard().text()
-print("lol::")
-print(s)
-print("::lol")
+#print("lol::")
+#print(s)
+#print("::lol")
 
 hpaste.stringToNodes(s)
 
 ]]></script>
+  </tool>
+
+  <tool name="hcopyweb" label="HCopyWeb" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
+import hpaste
+
+def do():
+    s=hpaste.nodesToString(hou.selectedNodes())
+    try:
+        s=hpaste.webPack(s)
+    except Exception as e:
+        hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
+        return
+    
+    QtWidgets.qApp.clipboard().setText(s)
+
+do()]]></script>
+  </tool>
+
+  <tool name="hpasteweb" label="HPasteWeb" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
+import hpaste
+
+def do():
+    s=QtWidgets.qApp.clipboard().text()
+    try:
+        s=hpaste.webUnpack(s)
+    except Exception as e:
+        hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
+        return
+    hpaste.stringToNodes(s)
+
+do()]]></script>
   </tool>
 </shelfDocument>

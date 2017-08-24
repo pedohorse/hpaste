@@ -8,7 +8,7 @@ def webPack(asciiText):
 			packid=packer.webPackData(asciiText)
 			break
 		except Exception as e:
-			print("error: %s"%e.message)
+			print("error: %s" % str(e.message))
 			print("failed to pack with plugin %s, looking for alternatives..."%cls.__name__)
 			continue
 	if(packid is None):
@@ -31,10 +31,10 @@ def webUnpack(wid):
 			unpacker=cls()
 			asciiText=unpacker.webUnpackData(id)
 			break
-		except:
-			print("error: %s" % e.message)
+		except Exception as e:
+			print("error: %s" % str(e.message))
 			print("keep trying...")
 			continue
 	if(asciiText is None):
-		raise("couldnt web unpack data")
+		raise RuntimeError("couldnt web unpack data")
 	return asciiText

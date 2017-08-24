@@ -52,7 +52,7 @@ class WePaste(WebClipBoardBase):
 		repstring = rep.read()
 		datastart = repstring.find('###===DATASTART===###')
 		if (datastart == -1):
-			print(repstring)
+			#print(repstring)
 			raise RuntimeError("data is corrupted")
 		dataend = repstring.rfind('###===DATAEND===###')
 		if (dataend == -1): raise RuntimeError("data end is corrupted")
@@ -88,7 +88,7 @@ class WePaste(WebClipBoardBase):
 		repstring = rep.read()
 		datastart = repstring.find('###===DATASTART===###')
 		if (datastart == -1):
-			print(repstring)
+			#print(repstring)
 			raise RuntimeError("data is corrupted")
 		dataend = repstring.rfind('###===DATAEND===###')
 		if (dataend == -1): raise RuntimeError("data end is corrupted")
