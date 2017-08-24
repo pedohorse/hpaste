@@ -2,9 +2,10 @@ import urllib2
 import urllib
 
 import random
+import base64
 
 
-class WebClipBoard(object):
+class WebClipBoardBase(object):
 	def webPackData(self, s):
 		raise NotImplementedError()
 
@@ -12,7 +13,7 @@ class WebClipBoard(object):
 		raise NotImplementedError()
 
 
-class WePaste(WebClipBoard):
+class WePaste(WebClipBoardBase):
 	def __init__(self):
 		self.__lastid = ''
 		self.__host = r"http://www.wepaste.com/"
@@ -66,12 +67,18 @@ class WePaste(WebClipBoard):
 		correct = repstring[datastart + 21:dataend]
 		if (not correct): raise RuntimeError("web clipboard data check failed")
 
-		self.__lastid = id  # why?
-		return id
+		self.__lastid = "@".join((id, base64.urlsafe_b64encode(type(self).__name__)))  # why?
+		return self.__lastid
 
-	def webUnpackData(self, id):
+	def webUnpackData(self, wid):
 
 		# check that id is at least valid
+		wid = str(wid)  # in case of unicode that we dont need
+		if (wid.count('@') != 1): raise RuntimeError('given wid is not a valid wid')
+		(id, cname) = wid.split('@')
+		cname = base64.urlsafe_b64decode(cname)
+		if (cname != type(self).__name__): raise RuntimeError("given id ")
+
 		for c in id:
 			if c not in self.__symbols:
 				raise RuntimeError("id is invalid")
