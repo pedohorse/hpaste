@@ -80,7 +80,7 @@ def nodesToString(nodes):
 				nodes[0].parent().saveChildrenToFile(nodes,(),temppath)
 			if(algtype==2):
 				nodes[0].parent().saveItemsToFile(nodes, temppath, True)
-			with open(temppath,"r") as f:
+			with open(temppath,"rb") as f:
 				code=f.read()
 		finally:
 			os.close(fd)
@@ -131,14 +131,13 @@ def stringToNodes(s,hou_parent=None):
 	if(houver1[0]!=houver2[0] or houver1[1]!=houver2[1]):print("HPaste: WARNING!! nodes were copied from a different houdini version: "+str(houver2))
 
 	#check context
-	context = parent.type().childTypeCategory().name()
+	context = hou_parent.type().childTypeCategory().name()
 	if(context!=data['context']):raise RuntimeError("this snippet has '%s' context"%data['context'])
 
 	#check sum
 	code=data['code']
 	if(hashlib.sha1(code).hexdigest()!=data['chsum']):
-		print("checksum failed!")
-		return
+		raise RuntimeError("checksum failed!")
 
 	#do the work
 	if(algtype==0):
@@ -155,7 +154,7 @@ def stringToNodes(s,hou_parent=None):
 		# get temp file
 		fd, temppath = tempfile.mkstemp()
 		try:
-			with open(temppath, "w") as f:
+			with open(temppath, "wb") as f:
 				f.write(code)
 			try:
 				if (algtype == 1):
@@ -165,11 +164,12 @@ def stringToNodes(s,hou_parent=None):
 			except hou.LoadWarning as e:
 				msg=e.instanceMessage()
 				print(msg)
-				#truncate just for display with random number 253
-				msgtrunc=False
-				if(len(msg)>253):
-					msgtrunc=True
-					msg=msg[:253]+"..."
-				hou.ui.displayMessage("There were warnings during load"+("(see console for full message)" if msgtrunc else "")+"\n"+msg)
+				if(hou.isUiAvailable()):
+					#truncate just for display with random number 253
+					msgtrunc=False
+					if(len(msg)>253):
+						msgtrunc=True
+						msg=msg[:253]+"..."
+					hou.ui.displayMessage("There were warnings during load"+("(see console for full message)" if msgtrunc else "")+"\n"+msg)
 		finally:
 			os.close(fd)
