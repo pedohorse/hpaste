@@ -4,7 +4,7 @@ import urllib
 import random
 
 
-class WebClipBoard:
+class WebClipBoard(object):
 	def webPackData(self, s):
 		raise NotImplementedError()
 
