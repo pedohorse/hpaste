@@ -12,6 +12,7 @@ class WebClipBoardBase(object):
 	def webUnpackData(self, s):
 		raise NotImplementedError()
 
+#TODO: child classes should produce just ID, some wrapper should add @classname to them and be able to unfold these wid into id and classname
 
 class WePaste(WebClipBoardBase):
 	def __init__(self):
