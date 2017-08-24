@@ -61,6 +61,7 @@ def nodesToString(nodes):
 	elif (houver[0] >= 16):
 		algtype = 2
 
+	#print("using algorithm %d"%algtype)
 	if (algtype == 0):
 		nodes = orderNodes(nodes)
 
@@ -81,7 +82,7 @@ def nodesToString(nodes):
 			if (algtype == 1):
 				nodes[0].parent().saveChildrenToFile(nodes, (), temppath)
 			if (algtype == 2):
-				nodes[0].parent().saveItemsToFile(nodes, temppath, True)
+				nodes[0].parent().saveItemsToFile(nodes, temppath, False) #true or false....
 			with open(temppath, "rb") as f:
 				code = f.read()
 		finally:
