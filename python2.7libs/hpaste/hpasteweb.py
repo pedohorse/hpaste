@@ -2,47 +2,65 @@ import hpastewebplugins
 import random #to shuffle plugins
 
 def webPack(asciiText, pluginList = None):
-	packid=None
-	if(pluginList is None):
-		pluginClasses=[x for x in hpastewebplugins.pluginClassList]
-		random.shuffle(pluginClasses)
-	else:
-		pluginClasses=[]
-		for pname in pluginList:
-			pluginClasses+=[x for x in hpastewebplugins.pluginClassList if x.__name__==pname]
-	for cls in pluginClasses:
-		try:
-			packer=cls()
-			packid=packer.webPackData(asciiText)
-			break
-		except Exception as e:
-			print("error: %s" % str(e.message))
-			print("failed to pack with plugin %s, looking for alternatives..."%cls.__name__)
-			continue
-	if(packid is None):
-		print("all web packing methods failed, sorry :(")
-		raise RuntimeError("couldnt web pack data")
+	allPackids=[]
+	done=False
 
-	return '@'.join((packid,cls.__name__))
+	while(not done):
+		packid=None
+		if(pluginList is None):
+			pluginClasses=[x for x in hpastewebplugins.pluginClassList]
+			random.shuffle(pluginClasses)
+		else:
+			pluginClasses=[]
+			for pname in pluginList:
+				pluginClasses+=[x for x in hpastewebplugins.pluginClassList if x.__name__==pname]
+		for cls in pluginClasses:
+			try:
+				packer=cls()
+				chunklen=min(packer.maxStringLength(),len(asciiText))
+				chunk=asciiText[:chunklen]
+				asciiText=asciiText[chunklen:]
+				packid=packer.webPackData(chunk)
+				break
+			except Exception as e:
+				print("error: %s" % str(e.message))
+				print("failed to pack with plugin %s, looking for alternatives..."%cls.__name__)
+				continue
+		if(packid is None):
+			print("all web packing methods failed, sorry :(")
+			raise RuntimeError("couldnt web pack data")
+
+		allPackids.append('@'.join((packid,cls.__name__)))
+		done=len(asciiText)==0
+		# just a failsafe:
+		if(len(allPackids)>128):
+			raise RuntimeError("Failsafe triggered: for some reason too many chunks. plz check your plugins for too small allowed string sizes or your data for sanity.")
+
+	return '#'.join(allPackids)
 
 def webUnpack(wid):
-	if (wid.count('@') != 1): raise RuntimeError('given wid is not a valid wid')
-	(id, cname) = wid.split('@')
+	allPackids=wid.split('#')
+	asciiTextParts=[]
+	for awid in allPackids:
+		if (awid.count('@') != 1): raise RuntimeError('given wid is not a valid wid')
+		(id, cname) = awid.split('@')
 
-	pretendents=[x for x in hpastewebplugins.pluginClassList if x.__name__==cname]
-	if(len(pretendents)==0):
-		raise RuntimeError("No plugins that can process this wid found")
+		pretendents=[x for x in hpastewebplugins.pluginClassList if x.__name__==cname]
+		if(len(pretendents)==0):
+			raise RuntimeError("No plugins that can process this wid found")
 
-	asciiText=None
-	for cls in pretendents:
-		try:
-			unpacker=cls()
-			asciiText=unpacker.webUnpackData(id)
-			break
-		except Exception as e:
-			print("error: %s" % str(e.message))
-			print("keep trying...")
-			continue
-	if(asciiText is None):
-		raise RuntimeError("couldnt web unpack data")
-	return asciiText
+		asciiText=None
+		for cls in pretendents:
+			try:
+				unpacker=cls()
+				asciiText=unpacker.webUnpackData(id)
+				break
+			except Exception as e:
+				print("error: %s" % str(e.message))
+				print("keep trying...")
+				continue
+		if(asciiText is None):
+			raise RuntimeError("couldnt web unpack data")
+		asciiTextParts.append(asciiText)
+
+	return ''.join(asciiTextParts)
