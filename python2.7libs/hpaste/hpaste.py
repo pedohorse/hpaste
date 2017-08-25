@@ -39,6 +39,14 @@ def orderNodes(nodes):
 	return snodes
 
 
+def getChildContext(node,houver):
+	if(houver[0]>=16):
+		return node.type().childTypeCategory().name()
+	elif(houver[0]<=15 and houver>=10):
+		return node.childTypeCategory().name()
+	else: raise RuntimeError("unsupported houdini version!")
+
+
 def nodesToString(nodes):
 	'''
 	algtype:
@@ -54,9 +62,9 @@ def nodesToString(nodes):
 
 	algtype = 1
 	houver = hou.applicationVersion()
-	if (houver[0] == 15 and houver[1] == 0 or houver[0] < 15):
+	if (houver[0] < 10):
 		raise RuntimeError("sorry, unsupported for now")
-	elif (houver[0] == 15 and houver[1] == 5):
+	elif (houver[0] <= 15 and houver[0] >= 10):
 		algtype = 1
 	elif (houver[0] >= 16):
 		algtype = 2
@@ -65,7 +73,7 @@ def nodesToString(nodes):
 	if (algtype == 0):
 		nodes = orderNodes(nodes)
 
-	context = parent.type().childTypeCategory().name()
+	context = getChildContext(parent,houver)
 
 	code = ''
 	if (algtype == 0):
@@ -135,7 +143,7 @@ def stringToNodes(s, hou_parent=None):
 	if (houver1[0] != houver2[0] or houver1[1] != houver2[1]): print("HPaste: WARNING!! nodes were copied from a different houdini version: " + str(houver2))
 
 	# check context
-	context = hou_parent.type().childTypeCategory().name()
+	context = getChildContext(hou_parent,houver1)
 	if (context != data['context']): raise RuntimeError("this snippet has '%s' context" % data['context'])
 
 	# check sum
