@@ -105,6 +105,14 @@ def nodesToString(nodes):
 	data['context'] = context
 	data['code'] = code
 	data['chsum'] = hashlib.sha1(code).hexdigest()
+	#security entries, for future
+	data['author'] = 'unknown'
+	data['encrypted'] = False
+	data['encryptionType'] = ''
+	data['signed'] = False
+	data['signatureType'] = ''
+	#these suppose there is a trusted vendors list with their public keys stored
+
 	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data)))
 
 	return stringdata
