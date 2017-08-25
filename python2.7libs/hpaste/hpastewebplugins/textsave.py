@@ -9,8 +9,13 @@ class TextSave(WebClipBoardBase):
 		self.__host = r'https://textsave.de/text/'
 		self.__headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
 
+	def maxStringLength(self):
+		return 16000000 #actually the service seem th be able to eat more,
+
 	def webPackData(self, s):
 
+		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
+		
 		try:
 			req = urllib2.Request(self.__host, "###===DATASTART===###"+s+"###===DATAEND===###", headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)

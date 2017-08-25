@@ -24,6 +24,9 @@ class WePaste(WebClipBoardBase):
 			id += self.__symbols[random.randint(0, lsmo)]
 		return id
 
+	def maxStringLength(self):
+		return 8000000
+
 	def webPackData(self, s):
 		'''
 		this shit packs s into some internetclipboard, u r responsible for that s is web-acceptable
@@ -32,7 +35,7 @@ class WePaste(WebClipBoardBase):
 		'''
 
 		# approximate limit
-		if (len(s) > 8000000): raise RuntimeError("len of s it too big for web clipboard currently")
+		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
 
 		id = self.genId()
 		try:
