@@ -1,7 +1,7 @@
 import hpastewebplugins
 import random #to shuffle plugins
 
-def webPack(asciiText, pluginList = None):
+def webPack(asciiText, pluginList = None, maxChunkSize = None):
 	allPackids=[]
 	done=False
 
@@ -18,9 +18,10 @@ def webPack(asciiText, pluginList = None):
 			try:
 				packer=cls()
 				chunklen=min(packer.maxStringLength(),len(asciiText))
+				if(maxChunkSize is not None): chunklen=min(chunklen,maxChunkSize)
 				chunk=asciiText[:chunklen]
-				asciiText=asciiText[chunklen:]
 				packid=packer.webPackData(chunk)
+				asciiText = asciiText[chunklen:]
 				break
 			except Exception as e:
 				print("error: %s" % str(e.message))
@@ -34,7 +35,7 @@ def webPack(asciiText, pluginList = None):
 		done=len(asciiText)==0
 		# just a failsafe:
 		if(len(allPackids)>128):
-			raise RuntimeError("Failsafe triggered: for some reason too many chunks. plz check your plugins for too small allowed string sizes or your data for sanity.")
+			raise RuntimeError("Failsafe triggered: for some reason too many chunks. plz check the chunkSize, or your plugins for too small allowed string sizes, or your data for sanity.")
 
 	return '#'.join(allPackids)
 
