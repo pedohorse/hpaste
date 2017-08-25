@@ -13,59 +13,112 @@
   </toolshelf>
 
   <tool name="hcopy" label="HCopy" icon="PLASMA_App">
-    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
+    <script scriptType="python"><![CDATA[try:
+    from PySide2 import QtWidgets as qt
+except:
+    from PySide import QtGui as qt
 
-import hpaste
-
-s=hpaste.nodesToString(hou.selectedNodes())
-
-QtWidgets.qApp.clipboard().setText(s)]]></script>
-  </tool>
-
-  <tool name="hpaste" label="HPaste" icon="PLASMA_App">
-    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
-
-import hpaste
-
-s=QtWidgets.qApp.clipboard().text()
-#print("lol::")
-#print(s)
-#print("::lol")
-
-hpaste.stringToNodes(s)
-
-]]></script>
-  </tool>
-
-  <tool name="hcopyweb" label="HCopyWeb" icon="PLASMA_App">
-    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
 import hpaste
 
 def do():
-    s=hpaste.nodesToString(hou.selectedNodes())
+    try:
+        s=hpaste.nodesToString(hou.selectedNodes())
+    except RuntimeError as e:
+        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+    except RuntimeWarning as e:
+        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
+    except Exception as e:
+        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+    
+    
+    qt.qApp.clipboard().setText(s)
+    
+do()]]></script>
+  </tool>
+
+  <tool name="hpaste" label="HPaste" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[try:
+    from PySide2 import QtWidgets as qt
+except:
+    from PySide import QtGui as qt
+
+import hpaste
+
+def do():
+    s=qt.qApp.clipboard().text()
+    
+    try:
+        hpaste.stringToNodes(s)
+    except RuntimeError as e:
+        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+    except RuntimeWarning as e:
+        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
+    except Exception as e:
+        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+
+do()]]></script>
+  </tool>
+
+  <tool name="hcopyweb" label="HCopyWeb" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[try:
+    from PySide2 import QtWidgets as qt
+except:
+    from PySide import QtGui as qt
+    
+import hpaste
+
+def do():
+    try:
+        s=hpaste.nodesToString(hou.selectedNodes())
+    except RuntimeError as e:
+        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+    except RuntimeWarning as e:
+        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
+    except Exception as e:
+        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+        
     try:
         s=hpaste.webPack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
     
-    QtWidgets.qApp.clipboard().setText(s)
+    qt.qApp.clipboard().setText(s)
 
 do()]]></script>
   </tool>
 
   <tool name="hpasteweb" label="HPasteWeb" icon="PLASMA_App">
-    <script scriptType="python"><![CDATA[from PySide2 import QtWidgets
+    <script scriptType="python"><![CDATA[try:
+    from PySide2 import QtWidgets as qt
+except:
+    from PySide import QtGui as qt
+    
 import hpaste
 
 def do():
-    s=QtWidgets.qApp.clipboard().text()
+    s=qt.qApp.clipboard().text()
     try:
         s=hpaste.webUnpack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
-    hpaste.stringToNodes(s)
+    try:
+        hpaste.stringToNodes(s)
+    except RuntimeError as e:
+        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
+    except RuntimeWarning as e:
+        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
+    except Exception as e:
+        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
+        return
 
 do()]]></script>
   </tool>

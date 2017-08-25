@@ -61,7 +61,7 @@ def nodesToString(nodes):
 	elif (houver[0] >= 16):
 		algtype = 2
 
-	#print("using algorithm %d"%algtype)
+	# print("using algorithm %d"%algtype)
 	if (algtype == 0):
 		nodes = orderNodes(nodes)
 
@@ -82,7 +82,7 @@ def nodesToString(nodes):
 			if (algtype == 1):
 				nodes[0].parent().saveChildrenToFile(nodes, (), temppath)
 			if (algtype == 2):
-				nodes[0].parent().saveItemsToFile(nodes, temppath, False) #true or false....
+				nodes[0].parent().saveItemsToFile(nodes, temppath, False)  # true or false....
 			with open(temppath, "rb") as f:
 				code = f.read()
 		finally:
@@ -112,8 +112,7 @@ def stringToNodes(s, hou_parent=None):
 	try:
 		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)))
 	except Exception as e:
-		print("input data is either corrupted or just not a nodecode: " + str(e.message))
-		return
+		raise RuntimeError("input data is either corrupted or just not a nodecode: " + str(e.message))
 
 	# check version
 	if (data['version'] > 1): raise RuntimeError("unsupported version of data format")
@@ -129,13 +128,11 @@ def stringToNodes(s, hou_parent=None):
 		supportedAlgs.add(1)
 		supportedAlgs.add(2)
 	algtype = data['algtype']
-	if (algtype not in supportedAlgs): raise RuntimeError(
-		"algorithm type is not supported by this houdini version, :( ")
+	if (algtype not in supportedAlgs): raise RuntimeError("algorithm type is not supported by this houdini version, :( ")
 
 	# check hou version
 	houver2 = data['houver']
-	if (houver1[0] != houver2[0] or houver1[1] != houver2[1]): print(
-	"HPaste: WARNING!! nodes were copied from a different houdini version: " + str(houver2))
+	if (houver1[0] != houver2[0] or houver1[1] != houver2[1]): print("HPaste: WARNING!! nodes were copied from a different houdini version: " + str(houver2))
 
 	# check context
 	context = hou_parent.type().childTypeCategory().name()
@@ -152,7 +149,7 @@ def stringToNodes(s, hou_parent=None):
 		# high security risk!!
 		if (hou.isUiAvailable()):
 			ok = hou.ui.displayMessage(
-				"WARNING! The algorith type used by the pasted snipped is legacy and present HIGH SECURITY RISK!\n be sure you TRUST THE SOURCE of the snippet!",
+				"WARNING! The algorithm type used by the pasted snipped is legacy and present HIGH SECURITY RISK!\n be sure you TRUST THE SOURCE of the snippet!",
 				("CANCEL", "ok"), severity=hou.severityType.Warning, close_choice=0, title="SECURITY WARNING")
 		else:
 			ok = 0
@@ -174,13 +171,14 @@ def stringToNodes(s, hou_parent=None):
 			except hou.LoadWarning as e:
 				msg = e.instanceMessage()
 				print(msg)
-				if (hou.isUiAvailable()):
-					# truncate just for display with random number 253
-					msgtrunc = False
-					if (len(msg) > 253):
-						msgtrunc = True
-						msg = msg[:253] + "..."
-					hou.ui.displayMessage("There were warnings during load" + (
-					"(see console for full message)" if msgtrunc else "") + "\n" + msg)
+
+				# truncate just for display with random number 253
+				msgtrunc = False
+				if (len(msg) > 253):
+					msgtrunc = True
+					msg = msg[:253] + "..."
+				raise RuntimeWarning("There were warnings during load" + ("(see console for full message)" if msgtrunc else "") + "\n" + msg)
 		finally:
 			os.close(fd)
+	else:
+		raise RuntimeError("algorithm type is not supported")
