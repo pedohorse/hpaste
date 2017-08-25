@@ -1,17 +1,25 @@
 # hpaste
 simple plain text snippet exchange for Houdini
+works/tested for Houdini 16.0, 15.5.
+should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
 
 ## installation ##
 1. copy **hpaste** folder from python2.7libs to your local script folder
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\python2.7libs\
+        * hint: create python2.7libs folder if it doesnt exist 
 2. copy contents of **toolbar** folder to your toolbar folder
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\toolbar\
+        * hint: create toolbar folder if it doesnt exist 
 3. start Houdini !!
 4. locate the HPaste shelf in shelf list
-5. if you want - you can assign **hotkeys** to copy-paste commands with: 
+5. if you want fancy icons for the buttons - copy **config** folder content into your config
+    * for example: C:\Users\\<**USER>**\Documents\houdini16.0\config\
+        * hint: create config folder if it doesnt exist 
+        * hint: merge icons folder with yours one if you dont have one yet
+6. if you want - you can assign **hotkeys** to copy-paste commands with: 
     * right-click on the **tool button** on the **shelf** -> **Edit Tool**, **Hotkeys** tab
     * set them to something not too common like Ctrl+Alt+Shift+C ,  Ctrl+Alt+Shift+V
-6. and may the force be with you
+7. and may the force be with you
 
 ## description ##
 * shelf goes with 4 buttons now: 
