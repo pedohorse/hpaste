@@ -21,6 +21,7 @@ def rescanPlugins():
 	for fn in files:
 		try:
 			newmodule=importlib.import_module(".".join((__name__,fn)))
+			reload(newmodule)
 		except:
 			print("hpaste web plugins: failed to load module %s"%fn)
 			continue
