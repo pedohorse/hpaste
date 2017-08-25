@@ -1,8 +1,11 @@
 import hpastewebplugins
+import random #to shuffle plugins
 
 def webPack(asciiText):
 	packid=None
-	for cls in hpastewebplugins.pluginClassList:
+	pluginClasses=[x for x in hpastewebplugins.pluginClassList]
+	random.shuffle(pluginClasses)
+	for cls in pluginClasses:
 		try:
 			packer=cls()
 			packid=packer.webPackData(asciiText)
