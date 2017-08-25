@@ -13,7 +13,7 @@ class TextSave(WebClipBoardBase):
 
 		try:
 			req = urllib2.Request(self.__host, "###===DATASTART===###"+s+"###===DATAEND===###", headers=self.__headers)
-			rep = urllib2.urlopen(req, timeout=4)  # request the page so it's created
+			rep = urllib2.urlopen(req, timeout=30)
 			repstring = rep.read()
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
@@ -31,7 +31,7 @@ class TextSave(WebClipBoardBase):
 	def webUnpackData(self, id):
 		try:
 			req = urllib2.Request(self.__host + id + r'/raw', headers=self.__headers)
-			rep = urllib2.urlopen(req, timeout=10)
+			rep = urllib2.urlopen(req, timeout=30)
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
 

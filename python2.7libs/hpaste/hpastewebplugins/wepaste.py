@@ -43,7 +43,7 @@ class WePaste(WebClipBoardBase):
 		req = urllib2.Request(self.__host + id,
 							  "expires=2&save=Savet%20it&emailaddress&send_email=0&content=" + "###===DATASTART===###" + s + "###===DATAEND===###")
 		try:
-			rep = urllib2.urlopen(req, timeout=10)
+			rep = urllib2.urlopen(req, timeout=30)
 		except Exception as e:
 			raise RuntimeError("timeout connecting to web clipboard: " + e.message)
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
@@ -79,7 +79,7 @@ class WePaste(WebClipBoardBase):
 			if c not in self.__symbols:
 				raise RuntimeError("id is invalid")
 		try:
-			rep = urllib2.urlopen(self.__host + id, timeout=10)
+			rep = urllib2.urlopen(self.__host + id, timeout=30)
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
 
