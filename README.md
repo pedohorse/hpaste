@@ -1,7 +1,9 @@
 # hpaste
 simple plain text snippet exchange for Houdini
-works/tested for Houdini 16.0, 15.5.
-should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
+
+for simple and fast exchange of node packs through any messenger
+
+Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
 
 ## installation ##
 1. copy **hpaste** folder from python2.7libs to your local script folder
@@ -21,6 +23,18 @@ should work also for 15.0 and maybe even less, to the point when Qt appeared in 
     * set them to something not too common like Ctrl+Alt+Shift+C ,  Ctrl+Alt+Shift+V
 7. and may the force be with you
 
+## how to use: ##
+* **to copy:**
+    1. select nodes you want to copy (nodes must be of the same parent!)
+    2. press **hcopy/hcopyweb** button (or hotkey) now you have the code/web-id in your clipboard
+    3. paste it to some messenger and send to a collegue
+* **to paste:**
+    1. receive code or web-id
+    2. copy received text to your system clipboard
+    3. in houdini - open the node viewer to the location you want to paste your nodes
+    4. press **hpaste/hpasteweb** button (or hotkey) depending on if you are pasting code or web-id
+
+
 ## description ##
 * shelf goes with 4 buttons now: 
     * **hcopy**, **hpaste** to copy-paste direct chunks of code
@@ -30,14 +44,4 @@ should work also for 15.0 and maybe even less, to the point when Qt appeared in 
         * pluses: links are super small and cozy
         * minuses: this require the code to be stored on 3-rd party web resource, and it can be accessed (pure theoretically) by anyone in the world!
         
-* to use:
-    * to copy:
-        1. select nodes you want to copy (nodes must be of the same parent!)
-        2. press **hcopy/hcopyweb** button (or hotkey) now you have the code/web-id in your clipboard
-        3. paste it to some messenger and send to a collegue
-    * to paste:
-        1. receive code or web-id
-        2. copy received text to your system clipboard
-        3. in houdini - open the node viewer to the location you want to paste your nodes
-        4. press **hpaste/hpasteweb** button (or hotkey) depending on if you are pasting code or web-id
-    
+
