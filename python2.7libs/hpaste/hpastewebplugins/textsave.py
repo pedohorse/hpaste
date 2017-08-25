@@ -1,0 +1,49 @@
+import urllib2
+import re
+
+from ..webclipboardbase import WebClipBoardBase
+
+
+class TextSave(WebClipBoardBase):
+	def __init__(self):
+		self.__host = r'https://textsave.de/text/'
+		self.__headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
+
+	def webPackData(self, s):
+
+		try:
+			req = urllib2.Request(self.__host, "###===DATASTART===###"+s+"###===DATAEND===###", headers=self.__headers)
+			rep = urllib2.urlopen(req, timeout=4)  # request the page so it's created
+			repstring = rep.read()
+		except Exception as e:
+			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
+
+		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
+		# at this point repstring should be of this form https://textsave.de/text/A4WXiJGGFndlHDY1
+		repmatch=re.match(r'(http|https):\/\/textsave.de\/text\/([^\/\.]*)$',repstring)
+		if(repmatch is None):
+			raise RuntimeError("unexpected clipboard server response")
+		id=repmatch.group(2)
+
+		return id
+
+
+	def webUnpackData(self, id):
+		try:
+			req = urllib2.Request(self.__host + id + r'/raw', headers=self.__headers)
+			rep = urllib2.urlopen(req, timeout=10)
+		except Exception as e:
+			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
+
+		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
+
+		repstring = rep.read()
+		datastart = repstring.find('###===DATASTART===###')
+		if (datastart == -1):
+			#print(repstring)
+			raise RuntimeError("data is corrupted")
+		dataend = repstring.rfind('###===DATAEND===###')
+		if (dataend == -1): raise RuntimeError("data end is corrupted")
+
+		s = repstring[datastart + 21:dataend]
+		return s
