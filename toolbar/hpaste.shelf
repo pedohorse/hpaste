@@ -12,7 +12,7 @@
     <memberTool name="hpasteweb"/>
   </toolshelf>
 
-  <tool name="hcopy" label="HCopy" icon="PLASMA_App">
+  <tool name="hcopy" label="HCopy" icon="copy.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
 except:
@@ -38,7 +38,7 @@ def do():
 do()]]></script>
   </tool>
 
-  <tool name="hpaste" label="HPaste" icon="PLASMA_App">
+  <tool name="hpaste" label="HPaste" icon="paste.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
 except:
@@ -63,7 +63,7 @@ def do():
 do()]]></script>
   </tool>
 
-  <tool name="hcopyweb" label="HCopyWeb" icon="PLASMA_App">
+  <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
 except:
@@ -94,7 +94,7 @@ def do():
 do()]]></script>
   </tool>
 
-  <tool name="hpasteweb" label="HPasteWeb" icon="PLASMA_App">
+  <tool name="hpasteweb" label="HPasteWeb" icon="cloud-download.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
 except:
