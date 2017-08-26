@@ -16,7 +16,7 @@ class TermBin(WebClipBoardBase):
 
 	@classmethod
 	def maxStringLength(self):
-		return 10000000
+		return 1048000
 
 	def webPackData(self, s):
 		if(not isinstance(s,str)):
