@@ -136,9 +136,10 @@ def stringToNodes(s, hou_parent=None):
 	# check accepted algtypes
 	houver1 = hou.applicationVersion()
 	supportedAlgs = set()
-	if (houver1[0] == 15 and houver1[1] == 5):
+	if (houver1[0] == 15):
 		supportedAlgs.add(0)
 		supportedAlgs.add(1)
+		supportedAlgs.add(2) #WITH BIG WARNING!!!
 	if (houver1[0] >= 16):
 		supportedAlgs.add(0)
 		supportedAlgs.add(1)
@@ -183,7 +184,12 @@ def stringToNodes(s, hou_parent=None):
 				if (algtype == 1):
 					hou_parent.loadChildrenFromFile(temppath)
 				if (algtype == 2):
-					hou_parent.loadItemsFromFile(temppath)
+					try:
+						hou_parent.loadItemsFromFile(temppath)
+					except AttributeError:
+						print("WARNING!!! your hou version does not support algorithm used for copying, TRYING possibly partly backward-INCOMPATIBLE method!")
+						print("CHECK SCENE INTEGRITY")
+						hou_parent.loadChildrenFromFile(temppath)
 			except hou.LoadWarning as e:
 				msg = e.instanceMessage()
 				print(msg)
