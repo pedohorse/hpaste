@@ -10,6 +10,7 @@ def webPack(asciiText, pluginList = None, maxChunkSize = None):
 		if(pluginList is None):
 			pluginClasses=[x for x in hpastewebplugins.pluginClassList]
 			random.shuffle(pluginClasses)
+			pluginClasses.sort(reverse=True, key=lambda x:x.speedClass())
 		else:
 			pluginClasses=[]
 			for pname in pluginList:

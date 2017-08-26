@@ -24,6 +24,11 @@ class WePaste(WebClipBoardBase):
 			id += self.__symbols[random.randint(0, lsmo)]
 		return id
 
+	@classmethod
+	def speedClass(self):
+		return 5
+
+	@classmethod
 	def maxStringLength(self):
 		return 8000000
 
@@ -64,7 +69,7 @@ class WePaste(WebClipBoardBase):
 		if (not correct): raise RuntimeError("web clipboard data check failed")
 
 		#self.__lastid = "@".join((id, base64.urlsafe_b64encode(type(self).__name__)))  # why?
-		self.__lastid = id
+		self.__lastid = str(id)
 		return self.__lastid
 
 	def webUnpackData(self, id):

@@ -9,6 +9,11 @@ class TextSave(WebClipBoardBase):
 		self.__host = r'https://textsave.de/text/'
 		self.__headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
 
+	@classmethod
+	def speedClass(self):
+		return 5
+
+	@classmethod
 	def maxStringLength(self):
 		return 10000000 #actually the service seem th be able to eat more,
 
@@ -21,19 +26,20 @@ class TextSave(WebClipBoardBase):
 			rep = urllib2.urlopen(req, timeout=30)
 			repstring = rep.read()
 		except Exception as e:
-			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
+			raise RuntimeError("error/timeout connecting to web clipboard: " + str(e.message))
 
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
 		# at this point repstring should be of this form https://textsave.de/text/A4WXiJGGFndlHDY1
-		repmatch=re.match(r'(http|https):\/\/textsave.de\/text\/([^\/\.]*)$',repstring)
+		repmatch=re.match(r'(http|https):\/\/textsave\.de\/text\/([^\/\.]*)$',repstring)
 		if(repmatch is None):
 			raise RuntimeError("unexpected clipboard server response")
 		id=repmatch.group(2)
 
-		return id
+		return str(id)
 
 
 	def webUnpackData(self, id):
+		id=str(id)
 		try:
 			req = urllib2.Request(self.__host + id + r'/raw', headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
