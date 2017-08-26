@@ -66,8 +66,10 @@ do()]]></script>
   <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
+    from PySide2 import QtCore as qtc
 except:
     from PySide import QtGui as qt
+    from PySide import QtCore as qtc
     
 import hpaste
 
@@ -82,14 +84,18 @@ def do():
     except Exception as e:
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
-        
+    
+    qt.qApp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webPack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
+    finally:
+        qt.qApp.restoreOverrideCursor()
     
     qt.qApp.clipboard().setText(s)
+    hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
 
 do()]]></script>
   </tool>
@@ -97,18 +103,24 @@ do()]]></script>
   <tool name="hpasteweb" label="HPasteWeb" icon="cloud-download.svg">
     <script scriptType="python"><![CDATA[try:
     from PySide2 import QtWidgets as qt
+    from PySide2 import QtCore as qtc
 except:
     from PySide import QtGui as qt
+    from PySide import QtCore as qtc
     
 import hpaste
 
 def do():
     s=qt.qApp.clipboard().text()
+    qt.qApp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webUnpack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
+    finally:
+        qt.qApp.restoreOverrideCursor()
+        
     try:
         hpaste.stringToNodes(s)
     except RuntimeError as e:
@@ -119,6 +131,7 @@ def do():
     except Exception as e:
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
+    hou.ui.setStatusMessage("Success: Nodes pasted!")
 
 do()]]></script>
   </tool>
