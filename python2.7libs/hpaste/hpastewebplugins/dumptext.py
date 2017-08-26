@@ -23,6 +23,8 @@ class DumpText(WebClipBoardBase):
 		'''
 
 		# approximate limit
+		if (not isinstance(s, str)):
+			s = str(s)
 		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
 
 		try:

@@ -19,7 +19,8 @@ class GitHub(WebClipBoardBase):
 		return 10000000 #actually the service seem th be able to eat more, much more!
 
 	def webPackData(self, s):
-
+		if (not isinstance(s, str)):
+			s = str(s)
 		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
 		data = {}
 		data["description"] = "hpaste exchange snippet"

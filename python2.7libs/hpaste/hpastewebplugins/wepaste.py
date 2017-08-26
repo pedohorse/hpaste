@@ -38,7 +38,8 @@ class WePaste(WebClipBoardBase):
 		:param s: string, cool for web
 		:return: string id for that shitty site
 		'''
-
+		if (not isinstance(s, str)):
+			s = str(s)
 		# approximate limit
 		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
 
