@@ -12,7 +12,7 @@ class GitHub(WebClipBoardBase):
 
 	@classmethod
 	def speedClass(self):
-		return 5
+		return 4
 
 	@classmethod
 	def maxStringLength(self):
