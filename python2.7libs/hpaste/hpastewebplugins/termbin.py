@@ -12,7 +12,7 @@ class TermBin(WebClipBoardBase):
 
 	@classmethod
 	def speedClass(self):
-		return 6
+		return 5
 
 	@classmethod
 	def maxStringLength(self):

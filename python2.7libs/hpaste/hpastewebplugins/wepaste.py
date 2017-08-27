@@ -13,7 +13,7 @@ class WePaste(WebClipBoardBase):
 
 		self.__symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	def genId(self, size=32):
+	def genId(self, size=16):
 		if (not isinstance(size, int)): raise AttributeError("size must be int")
 		if (size < 1): raise RuntimeError("improper size")
 		if (size > 4096): raise RuntimeError("improper size, r u fucking with me?")
@@ -26,7 +26,7 @@ class WePaste(WebClipBoardBase):
 
 	@classmethod
 	def speedClass(self):
-		return 5
+		return 6
 
 	@classmethod
 	def maxStringLength(self):
@@ -50,7 +50,7 @@ class WePaste(WebClipBoardBase):
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
 		req = urllib2.Request(self.__host + id,
-							  "expires=4&save=Savet%20it&emailaddress&send_email=0&content=" + "###===DATASTART===###" + s + "###===DATAEND===###")
+							  "expires=8&save=Savet%20it&emailaddress&send_email=0&content=" + "###===DATASTART===###" + s + "###===DATAEND===###")
 		try:
 			rep = urllib2.urlopen(req, timeout=30)
 		except Exception as e:
