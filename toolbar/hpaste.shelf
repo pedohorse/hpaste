@@ -22,7 +22,11 @@ import hpaste
 
 def do():
     try:
-        s=hpaste.nodesToString(hou.selectedNodes())
+        nodes=hou.selectedItems()
+    except:
+        nodes=hou.selectedNodes()
+    try:
+        s=hpaste.nodesToString(nodes)
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
@@ -75,7 +79,11 @@ import hpaste
 
 def do():
     try:
-        s=hpaste.nodesToString(hou.selectedNodes())
+        nodes=hou.selectedItems()
+    except:
+        nodes=hou.selectedNodes()
+    try:
+        s=hpaste.nodesToString(nodes)
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return

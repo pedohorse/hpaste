@@ -49,6 +49,7 @@ def getChildContext(node,houver):
 
 def nodesToString(nodes):
 	'''
+		nodes : hou.NetworkMovableItems
 	algtype:
 		0 - python code based algorythm
 		1 - new h16 serialization, much prefered!
@@ -58,7 +59,7 @@ def nodesToString(nodes):
 
 	parent = nodes[0].parent()
 	for node in nodes:
-		if (node.parent() != parent): raise RuntimeError("selected nodes must have the same parent!")
+		if (node.parent() != parent): raise RuntimeError("selected items must have the same parent!")
 
 	algtype = 1
 	houver = hou.applicationVersion()
@@ -77,6 +78,8 @@ def nodesToString(nodes):
 
 	code = ''
 	if (algtype == 0):
+		# filter to keep only nodes
+		nodes = [x for x in nodes if isinstance(x,hou.Node)]
 		for node in nodes:
 			newcode = node.asCode(recurse=True)
 			if (len(node.inputs()) > 0):
@@ -88,6 +91,8 @@ def nodesToString(nodes):
 		fd, temppath = tempfile.mkstemp()
 		try:
 			if (algtype == 1):
+				#filter to keep only nodes
+				nodes = [x for x in nodes if isinstance(x, hou.Node)]
 				nodes[0].parent().saveChildrenToFile(nodes, (), temppath)
 			if (algtype == 2):
 				nodes[0].parent().saveItemsToFile(nodes, temppath, False)  # true or false....
