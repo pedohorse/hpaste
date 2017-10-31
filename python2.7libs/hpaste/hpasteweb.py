@@ -41,6 +41,9 @@ def webPack(asciiText, pluginList = None, maxChunkSize = None):
 	return '#'.join(allPackids)
 
 def webUnpack(wid):
+	#just a bit cleanup the wid first, in case it was copied with extra spaces
+	wid=wid.strip()
+	#
 	allPackids=wid.split('#')
 	asciiTextParts=[]
 	for awid in allPackids:
