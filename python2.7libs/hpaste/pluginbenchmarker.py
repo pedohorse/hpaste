@@ -7,7 +7,7 @@ from pprint import pprint
 def doTest(cycles=1):
 	pluginlist=[x for x in hpastewebplugins.pluginClassList]
 	ts=''
-	for i in xrange(100000):ts+=chr(random.randint(ord('A'),ord('Z')))
+	for i in xrange(50000):ts+=chr(random.randint(ord('A'),ord('Z')))
 	#s is 50 kb
 	times={}
 	for cycle in xrange(cycles):
@@ -17,7 +17,7 @@ def doTest(cycles=1):
 			elif(i==2):s=ts*50
 
 			for plug in pluginlist:
-				if (plug.__name__ not in times): times[plug.__name__] = ((0,0,0),(0,0,0),(0,0,0)) #up,down,count
+				if (plug.__name__ not in times): times[plug.__name__] = [[0,0,0],[0,0,0],[0,0,0]] #up,down,count
 				try:
 					t1=time.time() #we'd better use time.clock() - but it's behaviour is too platform-dependent!
 					id=hw.webPack(s,[plug.__name__])
