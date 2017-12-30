@@ -1,7 +1,11 @@
 
 class CollectionInconsistentError(Exception):
-	def __init__(self,message):
+	def __init__(self,message=''):
 		super(CollectionInconsistentError,self).__init__(message)
+
+class CollectionItemInvalidError(Exception):
+	def __init__(self,message=''):
+		super(CollectionItemInvalidError,self).__init__(message)
 
 class CollectionItem(object):
 	def __init__(self,collection,name,description,id,metadata=None):
@@ -14,39 +18,50 @@ class CollectionItem(object):
 		#wid is not stored cuz it may be generated dynamically
 
 	def name(self):
+		if(not self.__valid):raise CollectionItemInvalidError()
 		return self._name
 
 	def description(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._desc
 
 	def id(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._id
 
 	def metadata(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._meta
 
 	def generatePublicWid(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._collection.genWid(self)
 
 	def content(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._collection.getContent(self)
 
 	def setName(self,newname):
-		raise NotImplementedError('Not Yet Implemented')
+		if (not self.__valid): raise CollectionItemInvalidError()
+		self._collection.changeItem(self,newName=newname)
 
 	def setContent(self,newcontent):
-		raise NotImplementedError('Not Yet Implemented')
+		if (not self.__valid): raise CollectionItemInvalidError()
+		self._collection.changeItem(self, newContent=newcontent)
 
-	def setDescription(self,newname):
-		raise NotImplementedError('Not Yet Implemented')
+	def setDescription(self,newdescription):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		self._collection.changeItem(self, newDescription=newdescription)
 
-	def setMetadata(self,newname):
-		raise NotImplementedError('Not Yet Implemented')
+	def isValid(self):
+		return self.__valid
 
+	def _invalidate(self):
+		self.__valid=False
 
 def defaultLogger(s,level=1):
 	levels=['VERBOSE','INFO','WARNING','ERROR']
-	print('%s: %s'%(levels[level],repr(s)))
+	print('%s: %s'%(levels[level],s if isinstance(s,str) or isinstance(s,unicode) else repr(s)))
 
 class CollectionBase(object):
 	def __init__(self):

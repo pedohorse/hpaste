@@ -35,7 +35,7 @@ class GithubCollection(CollectionBase):
 			#TODO: resolve error
 			log("unexpected server return level %d"%rep.getcode(),3)
 			return None
-		log(str(rep.info()))
+		log(str(rep.info()),0)
 		data=json.loads(rep.read())
 		gists=[x for x in data if '00_HPASTE_SNIPPET' in x['files']]
 		if(len(gists)==0):
@@ -150,7 +150,17 @@ class GithubCollection(CollectionBase):
 		newitem=CollectionItem(self,newfilename,gist['description'],'%s@%s' % (gist['id'], newfilename),metadata)
 		return newitem
 
+	def removeItem(self,item):
+		assert isinstance(item, CollectionItem), 'item must be a collection item'
+		id, name = item.id().split('@', 1)
 
+		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
+		req.get_method=lambda : 'DELETE'
+		rep = urllib2.urlopen(req)
+		item._invalidate()
+		if (rep.getcode() != 204):
+			log("unexpected server return level %d" % rep.getcode(), 3)
+			return
 
 if(__name__=='__main__'):
 	from os import path
