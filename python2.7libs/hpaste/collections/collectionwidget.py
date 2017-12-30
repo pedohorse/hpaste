@@ -49,14 +49,12 @@ class SnippetCollectionModel(QAbstractTableModel):
 				self.__itemList[row+i].removeSelf()
 			except:
 				everythingIsBad=True
-		self.__itemList=self.__itemList[:row]+self.__itemList[row+count:]
+				break
+		else:
+			self.__itemList=self.__itemList[:row]+self.__itemList[row+count:]
 		self.endRemoveRows()
 
-		if(everythingIsBad):
-			self.rescanCollections()
-			#Trying to recover
-
-		return True
+		return not everythingIsBad
 
 	def collections(self):
 		return tuple(self.__collections)
