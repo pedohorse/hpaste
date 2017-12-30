@@ -56,9 +56,9 @@ class GithubCollection(CollectionBase):
 		req=urllib2.Request(r'https://api.github.com/gists',headers=self.__headers)
 		rep=urllib2.urlopen(req)
 		if(rep.getcode()!=200):
-			#TODO: resolve error
-			log("unexpected server return level %d"%rep.getcode(),3)
-			return None
+			code = rep.getcode()
+			if (code == 403): raise InvalidToken('github auth failed')
+			raise RuntimeError('unexpected server reply')
 		log(str(rep.info()),0)
 		data=json.loads(rep.read())
 		gists=[x for x in data if '00_HPASTE_SNIPPET' in x['files']]
@@ -103,8 +103,10 @@ class GithubCollection(CollectionBase):
 		req=urllib2.Request(item.metadata()['raw_url'],headers=self.__headers)
 		rep=urllib2.urlopen(req)
 		if(rep.getcode()!=200):
-			#TODO: get some common func to process unauth errors
-			pass
+			code = rep.getcode()
+			if (code == 403): raise InvalidToken('github auth failed')
+			raise RuntimeError('unexpected server reply')
+
 		data=rep.read()
 
 		return data
@@ -133,9 +135,9 @@ class GithubCollection(CollectionBase):
 		req.get_method=lambda : 'PATCH'
 		rep = urllib2.urlopen(req)
 		if (rep.getcode() != 200):
-			# TODO: resolve error
-			log("unexpected server return level %d" % rep.getcode(), 3)
-			return
+			code = rep.getcode()
+			if (code == 403): raise InvalidToken('github auth failed')
+			raise RuntimeError('unexpected server reply')
 
 		gist=json.loads(rep.read())
 		newfilenames=gist['files'].keys()
