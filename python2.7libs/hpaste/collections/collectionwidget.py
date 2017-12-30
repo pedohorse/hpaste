@@ -2,7 +2,7 @@ if(__name__=='__main__'):
 	import os
 	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
 
-	from pprint import pprint
+from logger import defaultLogger as log
 
 from PySide2.QtCore import *
 from PySide2.QtWidgets import *
@@ -25,11 +25,51 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList+=collection.list()
 		self.layoutChanged.emit()
 
-	def rescanCollections(self):
-		self.__itemList=[]
-		for collection in self.__collections:
-			self.__itemList+=collection.list()
+	def addItemToCollection(self, collection, desiredName, description, content, metadata=None):
+		if(collection not in self.__collections):raise ValueError('collection must belong to the model')
+		newitem=collection.addItem(desiredName, description, content, metadata)
 
+		nextid=len(self.__itemList)
+		self.beginInsertRows(QModelIndex(),nextid,nextid)
+		self.__itemList.append(newitem)
+		self.endInsertRows()
+
+	def removeRows(self,row,count,parent):
+		lastrow=row+count-1
+		if(parent!=QModelIndex() or count==0 or  lastrow>=self.rowCount(parent)):return False
+
+		self.beginRemoveRows(parent, row,lastrow)
+		everythingIsBad=False
+		for i in xrange(count):
+			try:
+				self.__itemList[row+i].removeSelf()
+			except:
+				everythingIsBad=True
+		self.__itemList=self.__itemList[:row]+self.__itemList[row+count:]
+		self.endRemoveRows()
+
+		if(everythingIsBad):
+			self.rescanCollections()
+			#Trying to recover
+
+		return True
+
+	def collections(self):
+		return tuple(self.__collections)
+
+	def rescanCollections(self):
+		if(len(self.__itemList)>0):
+			self.beginRemoveRows(QModelIndex(),0,len(self.__itemList)-1)
+			self.__itemList=[]
+			self.endRemoveRows()
+
+		templist=[]
+		for collection in self.__collections:
+			templist+=collection.list()
+
+		self.beginInsertRows(QModelIndex(),0,len(templist)-1)
+		self.__itemList=templist
+		self.endInsertRows()
 
 	def columnCount(self,index):
 		if (index.isValid()): return 0
@@ -57,15 +97,57 @@ class CollectionWidget(QDropdownWidget):
 		super(CollectionWidget,self).__init__(parent)
 		self.setModel(SnippetCollectionModel([],self))
 
+		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
+		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
+
+	def rescanCollections(self):
+		self.model().rescanCollections()
+
 	def addCollection(self,collection):
 		self.model().addCollection(collection)
+
+	def _addItem(self,collection):
+		return
+		raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
+
+	def __removeItem(self,index):
+		self.model().removeRows(index.row(),1,QModelIndex())
+
+####Slots
+	@Slot(QPoint)
+	def showContextMenu(self,pos):
+		menu=QMenu('orders, captain?',self)
+		newaction=menu.addAction('choose this')
+		newaction.triggered.connect(self.accept)
+		sidemenu = menu.addMenu('add to collection')
+		for col in self.model().collections():
+			newaction=sidemenu.addAction(col.name())
+			newaction.setData((col))
+			newaction.triggered.connect(lambda : self._addItem(col))
+		menu.addSeparator()
+		newaction=menu.addAction('remove item')
+		newaction.triggered.connect(lambda : self.__removeItem(self._proxyModel().mapToSource(self.ui.mainView.currentIndex())))
+
+
+		menu.popup(self.mapToGlobal(pos))
+		menu.aboutToHide.connect(menu.deleteLater)
 
 ####TESTING
 if(__name__=='__main__'):
 	class FakeCollection(collectionbase.CollectionBase):
+		def __init__(self):
+			super(FakeCollection,self).__init__()
+			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat','testnoid') for x in xrange(100)]
+
+		def name(self):
+			return 'testname'
 
 		def list(self):
-			return [collectionbase.CollectionItem(self,'item %s'%x,'fat','testnoid') for x in xrange(100)]
+			return self.__coll
+
+		def removeItem(self,item):
+			self.__coll.remove(item)
+			item._invalidate()
 
 	import sys
 	from os import path
@@ -83,7 +165,7 @@ if(__name__=='__main__'):
 	wid=CollectionWidget()
 	wid.move(800, 400)
 	wid.addCollection(col)
-	wid.accepted.connect(lambda x: pprint(x.name()))
+	wid.accepted.connect(lambda x: log('dialog accepted "%s"'%x.name()))
 	wid.finished.connect(lambda : qapp.quit())
 	wid.show()
 	sys.exit(qapp.exec_())

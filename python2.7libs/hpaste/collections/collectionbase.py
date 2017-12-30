@@ -53,20 +53,24 @@ class CollectionItem(object):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		self._collection.changeItem(self, newDescription=newdescription)
 
+	def removeSelf(self):
+		#WARNING! item will be invalidated if removed!
+		self._collection.removeItem(self)
+
 	def isValid(self):
 		return self.__valid
 
 	def _invalidate(self):
 		self.__valid=False
 
-def defaultLogger(s,level=1):
-	levels=['VERBOSE','INFO','WARNING','ERROR']
-	print('%s: %s'%(levels[level],s if isinstance(s,str) or isinstance(s,unicode) else repr(s)))
-
 class CollectionBase(object):
 	def __init__(self):
 		#Deriving classes should establish connections to their sources here
 		pass
+
+	def name(self):
+		#should return some kind of readable identifier for user to see
+		raise NotImplementedError('Abstract method')
 
 	def list(self):
 		#this should produce list of snippets in the collection

@@ -109,16 +109,15 @@ class QDropdownWidget(QWidget):
 		self.__model=model
 		self.__proxyModel.setSourceModel(self.__model)
 
+	def _proxyModel(self):
+		return self.__proxyModel
 
 	@Slot()
 	def resizeToTable(self):
 
 		#hgt=self.ui.mainView.verticalHeader().length()
 		#self.resize(self.size().width(),hgt+32)
-		print("prepare resize")
 		self.adjustSize()
-		print("reisze")
-		print(self.ui.mainLayout.sizeHint())
 		if (self.__model is not None):
 			self.ui.mainView.setCurrentIndex(self.__proxyModel.index(0, 0))
 
@@ -133,6 +132,7 @@ class QDropdownWidget(QWidget):
 			self.hide()
 			event.accept()
 
+	@Slot()
 	def accept(self):
 		self.accepted.emit(self.__proxyModel.mapToSource(self.ui.mainView.currentIndex()).internalPointer())
 		self.hide()

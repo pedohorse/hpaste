@@ -3,8 +3,14 @@ from pprint import pprint
 import base64
 import json
 
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,defaultLogger
-log=defaultLogger
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError
+
+from logger import defaultLogger as log
+
+
+class InvalidToken(Exception):
+	def __init__(self,message):
+		super(InvalidToken,self).__init__(message)
 
 class GithubCollection(CollectionBase):
 
@@ -15,7 +21,10 @@ class GithubCollection(CollectionBase):
 		self.__token=str(token)
 		self.__headers= {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token}
 		#{'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % ('pedohorse', 'TentacleRapedH0lk'))}
-		#TODO: add token validity check and raise ex if not valid
+
+		#if token is bad - we will be thrown from here with InvalidToken exception
+		self.__name='invalid'
+		self._rescanName()
 
 	def test(self):
 		req = urllib2.Request('https://api.github.com/authorizations', headers=self.__headers)
@@ -24,6 +33,21 @@ class GithubCollection(CollectionBase):
 		print(reps)
 		r = json.loads(reps)
 		pprint(r)
+
+	def name(self):
+		return self.__name
+
+	def _rescanName(self):
+		req=urllib2.Request(r'https://api.github.com/user',headers=self.__headers)
+		rep=urllib2.urlopen(req)
+		if (rep.getcode() != 200):
+			code=rep.getcode()
+			if(code==403):raise InvalidToken('github auth failed')
+			log("unexpected server return level %d" % rep.getcode(), 3)
+			return None
+		data=json.loads(rep.read())
+		self.__name=data['login']
+
 
 	def list(self):
 		#this should produce list of snippets in the collection
@@ -136,8 +160,9 @@ class GithubCollection(CollectionBase):
 		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
 		rep = urllib2.urlopen(req)
 		if (rep.getcode() != 201):
-			log("unexpected server return level %d" % rep.getcode(), 3)
-			return None
+			code = rep.getcode()
+			if (code == 403): raise InvalidToken('github auth failed')
+			raise RuntimeError("unexpected server return level %d" % rep.getcode())
 
 		gist=json.loads(rep.read())
 		newfilenames = gist['files'].keys()
