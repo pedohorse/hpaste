@@ -1,10 +1,19 @@
 
 class CollectionInconsistentError(Exception):
+	#raise this when there are incinsistencies detected with a collection
+	def __init__(self,message=''):
+		super(CollectionInconsistentError,self).__init__(message)
+
+class CollectionSyncError(Exception):
+	#raise this when collection syncronisation failed
+	#but local collection is still valid, and remote did not show signs of inconsistency
+	#when this is raised during some action, the collection should remain in the same state as before the action
 	def __init__(self,message=''):
 		super(CollectionInconsistentError,self).__init__(message)
 
 class CollectionItemInvalidError(Exception):
-	def __init__(self,message=''):
+	#item was destroyed, but still addressed
+	def __init__(self,message='Item is Invalid. Maybe it was removed from collection.'):
 		super(CollectionItemInvalidError,self).__init__(message)
 
 class CollectionItem(object):
