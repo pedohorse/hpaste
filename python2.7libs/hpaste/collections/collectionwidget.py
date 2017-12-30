@@ -22,8 +22,12 @@ class SnippetCollectionModel(QAbstractTableModel):
 	def addCollection(self,collection):
 		assert isinstance(collection,collectionbase.CollectionBase),'collection must be a collection'
 		self.__collections.append(collection)
-		self.__itemList+=collection.list()
-		self.layoutChanged.emit()
+		tmplist=collection.list()
+		if(len(tmplist)==0):return
+		nextid=len(self.__itemList)
+		self.beginInsertRows(QModelIndex(),nextid,nextid+len(tmplist)-1)
+		self.__itemList+=tmplist
+		self.endInsertRows()
 
 	def addItemToCollection(self, collection, desiredName, description, content, metadata=None):
 		if(collection not in self.__collections):raise ValueError('collection must belong to the model')
@@ -107,11 +111,13 @@ class CollectionWidget(QDropdownWidget):
 		self.model().addCollection(collection)
 
 	def _addItem(self,collection):
-		return
-		raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
+		log('_addItem should be reimplemented in subclass to do what is needed in any specific situation',3)
+		#not raising cuz this is called deep through signal-slot mech, that cause exceptions to be fucked somewhere on the way
+		#raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
 
 	def __removeItem(self,index):
 		self.model().removeRows(index.row(),1,QModelIndex())
+
 
 ####Slots
 	@Slot(QPoint)
