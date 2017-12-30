@@ -3,12 +3,12 @@ from pprint import pprint
 import base64
 import json
 
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError
 
 from logger import defaultLogger as log
 
 
-class InvalidToken(Exception):
+class InvalidToken(CollectionSyncError):
 	def __init__(self,message):
 		super(InvalidToken,self).__init__(message)
 
@@ -43,8 +43,8 @@ class GithubCollection(CollectionBase):
 		if (rep.getcode() != 200):
 			code=rep.getcode()
 			if(code==403):raise InvalidToken('github auth failed')
-			log("unexpected server return level %d" % rep.getcode(), 3)
-			return None
+			raise CollectionSyncError("unexpected server return level %d" % code)
+
 		data=json.loads(rep.read())
 		self.__name=data['login']
 
@@ -58,7 +58,8 @@ class GithubCollection(CollectionBase):
 		if(rep.getcode()!=200):
 			code = rep.getcode()
 			if (code == 403): raise InvalidToken('github auth failed')
-			raise RuntimeError('unexpected server reply')
+			raise CollectionSyncError("unexpected server return level %d" % code)
+
 		log(str(rep.info()),0)
 		data=json.loads(rep.read())
 		gists=[x for x in data if '00_HPASTE_SNIPPET' in x['files']]
@@ -105,7 +106,7 @@ class GithubCollection(CollectionBase):
 		if(rep.getcode()!=200):
 			code = rep.getcode()
 			if (code == 403): raise InvalidToken('github auth failed')
-			raise RuntimeError('unexpected server reply')
+			raise CollectionSyncError("unexpected server return level %d" % code)
 
 		data=rep.read()
 
@@ -137,7 +138,7 @@ class GithubCollection(CollectionBase):
 		if (rep.getcode() != 200):
 			code = rep.getcode()
 			if (code == 403): raise InvalidToken('github auth failed')
-			raise RuntimeError('unexpected server reply')
+			raise CollectionSyncError("unexpected server return level %d" % code)
 
 		gist=json.loads(rep.read())
 		newfilenames=gist['files'].keys()
@@ -164,7 +165,7 @@ class GithubCollection(CollectionBase):
 		if (rep.getcode() != 201):
 			code = rep.getcode()
 			if (code == 403): raise InvalidToken('github auth failed')
-			raise RuntimeError("unexpected server return level %d" % rep.getcode())
+			raise CollectionSyncError("unexpected server return level %d" % code)
 
 		gist=json.loads(rep.read())
 		newfilenames = gist['files'].keys()
@@ -184,10 +185,12 @@ class GithubCollection(CollectionBase):
 		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
 		req.get_method=lambda : 'DELETE'
 		rep = urllib2.urlopen(req)
-		item._invalidate()
 		if (rep.getcode() != 204):
-			log("unexpected server return level %d" % rep.getcode(), 3)
-			return
+			code = rep.getcode()
+			if (code == 403): raise InvalidToken('github auth failed')
+			raise CollectionSyncError("unexpected server return level %d" % code)
+
+		item._invalidate()
 
 if(__name__=='__main__'):
 	from os import path
