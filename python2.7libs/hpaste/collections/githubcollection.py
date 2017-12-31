@@ -8,6 +8,17 @@ from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentE
 from logger import defaultLogger as log
 
 
+def urlopen_nt(req):
+	code = -1
+	rep = None
+	try:
+		rep = urllib2.urlopen(req)
+	except urllib2.HTTPError as e:
+		code = e.code
+
+	if (code == -1): code = rep.getcode()
+	return code, rep
+
 class InvalidToken(CollectionSyncError):
 	def __init__(self,message):
 		super(InvalidToken,self).__init__(message)
@@ -39,9 +50,8 @@ class GithubCollection(CollectionBase):
 
 	def _rescanName(self):
 		req=urllib2.Request(r'https://api.github.com/user',headers=self.__headers)
-		rep=urllib2.urlopen(req)
-		if (rep.getcode() != 200):
-			code=rep.getcode()
+		code,rep=urlopen_nt(req)
+		if (code != 200):
 			if(code==403):raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
@@ -54,9 +64,9 @@ class GithubCollection(CollectionBase):
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
 		req=urllib2.Request(r'https://api.github.com/gists',headers=self.__headers)
-		rep=urllib2.urlopen(req)
-		if(rep.getcode()!=200):
-			code = rep.getcode()
+		code, rep = urlopen_nt(req)
+
+		if(code!=200):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
@@ -102,9 +112,8 @@ class GithubCollection(CollectionBase):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 
 		req=urllib2.Request(item.metadata()['raw_url'],headers=self.__headers)
-		rep=urllib2.urlopen(req)
-		if(rep.getcode()!=200):
-			code = rep.getcode()
+		code, rep = urlopen_nt(req)
+		if(code!=200):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
@@ -134,9 +143,8 @@ class GithubCollection(CollectionBase):
 
 		req=urllib2.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
 		req.get_method=lambda : 'PATCH'
-		rep = urllib2.urlopen(req)
-		if (rep.getcode() != 200):
-			code = rep.getcode()
+		code, rep = urlopen_nt(req)
+		if (code != 200):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
@@ -161,9 +169,8 @@ class GithubCollection(CollectionBase):
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files'][desiredName] = {'content':content}
 		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
-		rep = urllib2.urlopen(req)
-		if (rep.getcode() != 201):
-			code = rep.getcode()
+		code, rep = urlopen_nt(req)
+		if (code != 201):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
@@ -184,9 +191,8 @@ class GithubCollection(CollectionBase):
 
 		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
 		req.get_method=lambda : 'DELETE'
-		rep = urllib2.urlopen(req)
-		if (rep.getcode() != 204):
-			code = rep.getcode()
+		code, rep = urlopen_nt(req)
+		if (code != 204):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
