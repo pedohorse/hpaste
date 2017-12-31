@@ -10,6 +10,7 @@
     <memberTool name="hpaste"/>
     <memberTool name="hcopyweb"/>
     <memberTool name="hpasteweb"/>
+    <memberTool name="hpastecollection"/>
   </toolshelf>
 
   <tool name="hcopy" label="HCopy" icon="copy.svg">
@@ -142,5 +143,22 @@ def do():
     hou.ui.setStatusMessage("Success: Nodes pasted!")
 
 do()]]></script>
+  </tool>
+
+  <tool name="hpastecollection" label="Collection" icon="PLASMA_App">
+    <script scriptType="python"><![CDATA[from PySide2.QtGui import QCursor
+from PySide2.QtWidgets import QInputDialog
+
+import hpaste.hpastecollectionwidget
+#reload(hpaste.hpastecollectionwidget)
+from hpaste.hpastecollectionwidget import HPasteCollectionWidget,githubAuth
+
+#print(QInputDialog.getText(hou.qt.mainWindow(),'title','label',text='a snippet'))
+print(QCursor.pos())
+wid=HPasteCollectionWidget()
+wid.move(QCursor.pos())
+wid.show()
+
+]]></script>
   </tool>
 </shelfDocument>
