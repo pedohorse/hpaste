@@ -6,7 +6,7 @@ import socket
 
 import hou
 
-from PySide2.QtCore import Slot
+from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
 from PySide2.QtWidgets import QInputDialog
 
 import hpaste
@@ -90,14 +90,36 @@ def githubAuth():
 class HPasteCollectionWidget(object):
 	class __HPasteCollectionWidget(CollectionWidget):
 		def __init__(self, parent=None):
-			super(HPasteCollectionWidget.__HPasteCollectionWidget,self).__init__(parent)
+			super(HPasteCollectionWidget.__HPasteCollectionWidget,self).__init__(parent,metadataExposedKeys=('raw_url','nettype'))
+			for x in xrange(1, 5):
+				self.ui.mainView.horizontalHeader().hideSection(x)
+
+			self.__nettypeFilter=QSortFilterProxyModel(self)
+			self.__nettypeFilter.setFilterKeyColumn(4)
+			self.__nettypeFilter.setFilterRegExp(QRegExp("*", Qt.CaseInsensitive, QRegExp.Wildcard))
+			self.appendFilter(self.__nettypeFilter)
+
 			self.accepted.connect(self.doOnAccept)
+
+		def setNetworkEditor(self,pane):
+			if(not isinstance(pane,hou.NetworkEditor)):
+				pane=None
+
+			self.__nepane = pane #save to position pasted nodes in it
+
+			if(pane is None):
+				nettype='*'
+				self.__netType='' #Used to create new snippet types
+			else:
+				nettype=hpaste.getChildContext(pane.pwd(),hou.applicationVersion())
+				self.__netType=nettype
+			self.__nettypeFilter.setFilterRegExp(QRegExp(nettype, Qt.CaseInsensitive, QRegExp.Wildcard))
 
 		@Slot(object)
 		def doOnAccept(self,item):
 			if(item is None):return
 			try:
-				hpaste.stringToNodes(item.content())
+				hpaste.stringToNodes(item.content(),ne=self.__nepane)
 			except Exception as e:
 				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)
 
@@ -122,23 +144,26 @@ class HPasteCollectionWidget(object):
 				#print(name)
 				#print(desc)
 				#print(hpaste.nodesToString(nodes))
-				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes))
+				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
 				hou.ui.displayMessage('Network error occured: %s'%e.message, severity=hou.severityType.Error)
 
 
 	__instance=None
-	def __init__(self):
+	def __init__(self,parent):
 		if(HPasteCollectionWidget.__instance is None):
-			HPasteCollectionWidget.__instance=HPasteCollectionWidget.__HPasteCollectionWidget()
 			try:
 				token=githubAuth()
 			except Exception as e:
 				hou.ui.displayMessage('Something went wrong.\n%s'%e.message)
 				self.__instance=None
-				raise RuntimeError('FAIL')
-
+				raise RuntimeError('FAILED')
+			HPasteCollectionWidget.__instance = HPasteCollectionWidget.__HPasteCollectionWidget(parent)
 			HPasteCollectionWidget.__instance.addCollection(GithubCollection(token))
+
+		elif(parent is not HPasteCollectionWidget.__instance.parent()):
+			print("reparenting")
+			HPasteCollectionWidget.__instance.setParent(parent)
 
 	def __getattr__(self, item):
 		return getattr(HPasteCollectionWidget.__instance,item)
