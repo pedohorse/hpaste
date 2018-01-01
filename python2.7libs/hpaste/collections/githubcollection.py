@@ -85,11 +85,14 @@ class GithubCollection(CollectionBase):
 				raise CollectionInconsistentError('impossible error! marker lost')
 			if(len(files)!=1):raise CollectionInconsistentError('each gist must have one marker and one file')
 			desc=gist['description']
+			nettype=''
+			if(':' in desc):
+				nettype,desc=desc.split(':',1)
 
 			for filename in files:
 				filedata=files[filename]
 				rawurl=filedata['raw_url']
-				newitem=CollectionItem(self,filename,desc,'%s@%s'%(gist['id'],filename),{'raw_url':rawurl})
+				newitem=CollectionItem(self,filename,desc,'%s@%s'%(gist['id'],filename),{'raw_url':rawurl,'nettype':nettype})
 				res.append(newitem)
 
 		return tuple(res)
@@ -99,7 +102,7 @@ class GithubCollection(CollectionBase):
 	def reinit(self):
 		#this method should completely reread everything
 		#rendering all existing items invalid
-		raise NotImplementedError('Abstract method')
+		raise NotImplementedError('Not yet implemented')
 
 	def genWid(self,item):
 		#this should generate hpaste compatible wid, that does not require collections to work
@@ -165,6 +168,8 @@ class GithubCollection(CollectionBase):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
 		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
 
+		if('nettype' in metadata):
+			description=":".join((metadata['nettype'],description))
 		postdata = {'public': False, 'description': description}
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files'][desiredName] = {'content':content}
@@ -182,7 +187,12 @@ class GithubCollection(CollectionBase):
 		newfilename = newfilenames[0]
 		if(metadata is None):metadata={}
 		metadata['raw_url'] = gist['files'][newfilename]['raw_url']
-		newitem=CollectionItem(self,newfilename,gist['description'],'%s@%s' % (gist['id'], newfilename),metadata)
+		desc=gist['description']
+		nettype = ''
+		if (':' in desc):
+			nettype, desc = desc.split(':', 1)
+		metadata['nettype']=nettype
+		newitem=CollectionItem(self,newfilename,desc,'%s@%s' % (gist['id'], newfilename),metadata)
 		return newitem
 
 	def removeItem(self,item):
