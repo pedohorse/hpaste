@@ -7,7 +7,7 @@ import socket
 import hou
 
 from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
-from PySide2.QtWidgets import QInputDialog
+from PySide2.QtWidgets import QInputDialog,QMessageBox
 
 import hpaste
 from collections.collectionwidget import CollectionWidget
@@ -128,7 +128,7 @@ class HPasteCollectionWidget(object):
 			#Please, dont throw from here!
 			nodes=hou.selectedNodes()
 			if(len(nodes)==0):
-				hou.ui.displayMessage('selection is empty, nothing to add',severity=hou.severityType.Warning)
+				QMessageBox.warning(self,'not created','selection is empty, nothing to add')
 				return
 
 			while True:
@@ -146,7 +146,7 @@ class HPasteCollectionWidget(object):
 				#print(hpaste.nodesToString(nodes))
 				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
-				hou.ui.displayMessage('Network error occured: %s'%e.message, severity=hou.severityType.Error)
+				QMessageBox.critical(self,'something went wrong!','Network error occured: %s'%e.message)
 
 
 	__instance=None
