@@ -59,6 +59,8 @@ class QDropdownWidget(QWidget):
 
 	def __init__(self,parent=None):
 		super(QDropdownWidget,self).__init__(parent)
+		self.__filterList=[]
+
 		self.ui=UiHolder()
 		self.ui.mainLayout=QVBoxLayout(self)
 		self.ui.mainLayout.setContentsMargins(0,0,0,0)
@@ -74,6 +76,8 @@ class QDropdownWidget(QWidget):
 		self.setMinimumSize(32, 32)
 
 		self.ui.mainView.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+		self.ui.mainView.setSelectionMode(QAbstractItemView.SingleSelection)
+		self.ui.mainView.setSelectionBehavior(QAbstractItemView.SelectItems)
 		self.setSizePolicy(QSizePolicy.Minimum,QSizePolicy.Minimum)
 
 		#self.resize(128,512)
@@ -101,16 +105,72 @@ class QDropdownWidget(QWidget):
 		self.setFocusProxy(self.ui.nameInput)
 		self.ui.nameInput.setFocus()
 
+	def appendFilter(self,filter):
+		assert isinstance(filter,QSortFilterProxyModel), 'filter must be a QSortFilterProxyModel instance'
+		if(filter in self.__filterList):return False
+		if (len(self.__filterList) == 0):
+			filter.setSourceModel(self.__model)
+		else:
+			filter.setSourceModel(self.__filterList[-1])
+		self.__proxyModel.setSourceModel(filter)
+
+		self.__filterList.append(filter)
+
+
+	#Todo: implement insertFilter or smth
+
+	def removeFilter(self,filter_or_id):
+		assert isinstance(filter_or_id,QSortFilterProxyModel) or isinstance(filter_or_id,int),'filter_or_id should be either an instance of QSortFilterProxyModel or an int'
+		id=-1
+		if(isinstance(filter_or_id,QSortFilterProxyModel)):
+			filter=filter_or_id
+			if (filter not in self.__filterList): return False
+			id=self.__filterList.index(filter)
+		else:
+			id=filter_or_id
+
+		lf=len(self.__filterList)
+		if(id<-lf or id>=lf):raise ValueError('id is off the bounds')
+		if(id<0):id+=lf #easier to keep id non negative
+		if(id==0):
+			if(lf>1):
+				self.__filterList[1].setSourceModel(self.__model)
+			else:
+				self.__proxyModel.setSourceModel(self.__model)
+		elif(id==lf-1): #also since id!=0 means lf is >1
+			self.__proxyModel.setSourceModel(self.__filterList[id-1])
+		else: #so id!=0 and id!=lf-1
+			self.__filterList[id+1].setSourceModel(self.__filterList[id-1])
+
+		self.__filterList[id].setModel(None)
+		del self.__filterList[id]
+		return True
+
+
+	def _mapToSource(self,index):
+		retindex=self.__proxyModel.mapToSource(index)
+		for filter in reversed(self.__filterList):
+			retindex=filter.mapToSource(retindex)
+		return retindex
+
+	def _mapFromSource(self,index):
+		retindex=index
+		for filter in self.__filterList:
+			retindex=filter.mapFromSource(retindex)
+		return self.__proxyModel.mapFromSource(retindex)
 
 	def model(self):
 		return self.__model
 
 	def setModel(self,model):
 		self.__model=model
-		self.__proxyModel.setSourceModel(self.__model)
+		if(len(self.__filterList)>0):
+			self.__filterList[0].setSourceModel(self.__model)
+		else:
+			self.__proxyModel.setSourceModel(self.__model)
 
-	def _proxyModel(self):
-		return self.__proxyModel
+	#def _proxyModel(self):
+	#	return self.__proxyModel
 
 	@Slot()
 	def resizeToTable(self):
@@ -134,7 +194,7 @@ class QDropdownWidget(QWidget):
 
 	@Slot()
 	def accept(self):
-		self.accepted.emit(self.__proxyModel.mapToSource(self.ui.mainView.currentIndex()).internalPointer())
+		self.accepted.emit(self._mapToSource(self.ui.mainView.currentIndex()).internalPointer())
 		self.hide()
 
 	def keyPressEvent(self,event):
@@ -151,6 +211,10 @@ class QDropdownWidget(QWidget):
 		elif(event.key()==Qt.Key_Escape):
 			self.hide()
 		event.accept()
+
+	def showEvent(self,event):
+		self.ui.nameInput.setText('')
+		self.ui.mainView.setCurrentIndex(self.__proxyModel.index(0,0))
 
 	def hideEvent(self,event):
 		self.finished.emit()
