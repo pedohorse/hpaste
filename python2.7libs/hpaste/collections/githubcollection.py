@@ -15,6 +15,8 @@ def urlopen_nt(req):
 		rep = urllib2.urlopen(req)
 	except urllib2.HTTPError as e:
 		code = e.code
+	except urllib2.URLError as e:
+		raise CollectionSyncError('unable to reach collection: %s'%e.reason)
 
 	if (code == -1): code = rep.getcode()
 	return code, rep
