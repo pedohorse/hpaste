@@ -12,10 +12,14 @@ from QDropdownWidget import QDropdownWidget
 import collectionbase
 
 class SnippetCollectionModel(QAbstractTableModel):
-	def __init__(self,collectionsList,parent=None):
+	def __init__(self,collectionsList,parent=None,metadataExposedKeys=()):
+		assert isinstance(metadataExposedKeys,list) or isinstance(metadataExposedKeys,tuple), 'metadataExposeKeys should be a collection of string keys'
+
 		super(SnippetCollectionModel,self).__init__(parent)
 		self.__collections=list(collectionsList)
 		self.__itemList=[]
+
+		self.__metadataExposedKeys=tuple(metadataExposedKeys)
 
 		self.rescanCollections()
 
@@ -73,11 +77,14 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList=templist
 		self.endInsertRows()
 
-	def columnCount(self,index):
+	def columnCount(self,index=None):
+		if (index is None): index = QModelIndex()
 		if (index.isValid()): return 0
-		return 1
+		#name,desc,id + metadatakeys
+		return 3+len(self.__metadataExposedKeys)
 
-	def rowCount(self,index):
+	def rowCount(self,index=None):
+		if (index is None): index = QModelIndex()
 		if (index.isValid()): return 0
 		return len(self.__itemList)
 
@@ -88,16 +95,25 @@ class SnippetCollectionModel(QAbstractTableModel):
 
 	def data(self,index, role = Qt.DisplayRole):
 		if(role==Qt.DisplayRole):
-			if(index.column()>0):return ''
-			return self.__itemList[index.row()].name()
+			if(index.column() == 0):
+				return self.__itemList[index.row()].name()
+			elif(index.column() == 1):
+				return self.__itemList[index.row()].description()
+			elif(index.column() == 2):
+				return self.__itemList[index.row()].id()
+			else:
+				metadata=self.__itemList[index.row()].metadata()
+				key=self.__metadataExposedKeys[index.column()-3]
+				if(key in metadata): return metadata[key]
+				else: return ''
 		return None
 
 
 
 class CollectionWidget(QDropdownWidget):
-	def __init__(self,parent=None):
+	def __init__(self,parent=None,metadataExposedKeys=()):
 		super(CollectionWidget,self).__init__(parent)
-		self.setModel(SnippetCollectionModel([],self))
+		self.setModel(SnippetCollectionModel([],self,metadataExposedKeys))
 
 		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
@@ -130,7 +146,7 @@ class CollectionWidget(QDropdownWidget):
 			newaction.triggered.connect(lambda : self._addItem(col))
 		menu.addSeparator()
 		newaction=menu.addAction('remove item')
-		newaction.triggered.connect(lambda : self.__removeItem(self._proxyModel().mapToSource(self.ui.mainView.currentIndex())))
+		newaction.triggered.connect(lambda : self.__removeItem(self._mapToSource(self.ui.mainView.currentIndex())))
 
 
 		menu.popup(self.mapToGlobal(pos))
@@ -141,7 +157,7 @@ if(__name__=='__main__'):
 	class FakeCollection(collectionbase.CollectionBase):
 		def __init__(self):
 			super(FakeCollection,self).__init__()
-			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat','testnoid') for x in xrange(100)]
+			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat %s'%(x*2),'testnoid',{'raw_url':'https://fuck','nettype':'WOOF'}) for x in xrange(100)]
 
 		def name(self):
 			return 'testname'
@@ -166,7 +182,7 @@ if(__name__=='__main__'):
 	#print(testToken)
 	col = FakeCollection()
 
-	wid=CollectionWidget()
+	wid=CollectionWidget(metadataExposedKeys=('raw_url','nettype'))
 	wid.move(800, 400)
 	wid.addCollection(col)
 	wid.accepted.connect(lambda x: log('dialog accepted "%s"'%x.name()))
