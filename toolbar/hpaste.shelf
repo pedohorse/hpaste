@@ -119,7 +119,7 @@ except:
     
 import hpaste
 
-def do():
+def do(pane=None):
     s=qt.qApp.clipboard().text()
     qt.qApp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
@@ -131,7 +131,7 @@ def do():
         qt.qApp.restoreOverrideCursor()
         
     try:
-        hpaste.stringToNodes(s)
+        hpaste.stringToNodes(s,ne=pane)
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
@@ -142,7 +142,9 @@ def do():
         return
     hou.ui.setStatusMessage("Success: Nodes pasted!")
 
-do()]]></script>
+
+do(kwargs['pane'])
+]]></script>
   </tool>
 
   <tool name="hpastecollection" label="Collection" icon="PLASMA_App">
@@ -151,14 +153,21 @@ from PySide2.QtWidgets import QInputDialog
 
 import hpaste.hpastecollectionwidget
 #reload(hpaste.hpastecollectionwidget)
+#from hpaste import getChildContext
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget,githubAuth
 
-#print(QInputDialog.getText(hou.qt.mainWindow(),'title','label',text='a snippet'))
-print(QCursor.pos())
-wid=HPasteCollectionWidget()
-wid.move(QCursor.pos())
-wid.show()
 
-]]></script>
+#print(kwargs)
+def do(kwargs):
+    pane=kwargs['pane']
+    if(pane is None or not isinstance(pane,hou.NetworkEditor)):
+        return
+    
+    wid=HPasteCollectionWidget(hou.qt.mainWindow())
+    wid.move(QCursor.pos())
+    wid.setNetworkEditor(pane)
+    wid.show()
+    
+do(kwargs)]]></script>
   </tool>
 </shelfDocument>
