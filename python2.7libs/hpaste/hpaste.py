@@ -123,10 +123,12 @@ def nodesToString(nodes):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent=None):
+def stringToNodes(s, hou_parent = None, ne = None):
+	paste_to_cursor=ne is not None
 	if (hou_parent is None):
-		ne = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
-		if (ne is None): raise RuntimeError("cannot find opened network editor")
+		if(ne is None):
+			ne = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
+			if (ne is None): raise RuntimeError("cannot find opened network editor")
 		hou_parent = ne.pwd()
 
 	s = str(s)  # ununicode. there should not be any unicode in it anyways
@@ -164,6 +166,13 @@ def stringToNodes(s, hou_parent=None):
 	code = data['code']
 	if (hashlib.sha1(code).hexdigest() != data['chsum']):
 		raise RuntimeError("checksum failed!")
+
+
+	if (paste_to_cursor):
+		if (houver1[0] == 16):
+			olditems = hou_parent.allItems()
+		else:
+			olditems = hou_parent.children()
 
 	# do the work
 	code = binascii.a2b_qp(code)
@@ -209,3 +218,24 @@ def stringToNodes(s, hou_parent=None):
 			os.close(fd)
 	else:
 		raise RuntimeError("algorithm type is not supported")
+
+	if(paste_to_cursor):
+		#now collect pasted nodes
+		if (houver1[0] == 16):
+			newitems = [x for x in hou_parent.allItems() if x not in olditems]
+		else:
+			newitems = [x for x in hou_parent.children() if x not in olditems]
+
+		if(len(newitems)==0):return
+		#calc center
+		cpos=hou.Vector2()
+		cnt=0
+		for item in newitems:
+			cnt+=1
+			cpos+=item.position()
+		cpos=cpos/cnt
+		offset=ne.cursorPosition()-cpos
+		for item in newitems:
+			item.move(offset)
+
+
