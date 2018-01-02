@@ -158,6 +158,9 @@ class HPasteCollectionWidget(object):
 			except CollectionSyncError as e:
 				QMessageBox.critical(self,'something went wrong!','Network error occured: %s'%e.message)
 
+		def _confirmRemove(self,index):
+			return QMessageBox.warning(self,'sure?','confirm removing the item from collection',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
+
 
 	__instance=None
 	def __init__(self,parent):
