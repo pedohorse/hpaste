@@ -94,6 +94,9 @@ class HPasteCollectionWidget(object):
 			for x in xrange(1, 5):
 				self.ui.mainView.horizontalHeader().hideSection(x)
 
+			self.__nepane=None
+			self.__netType='' 
+
 			self.__nettypeFilter=QSortFilterProxyModel(self)
 			self.__nettypeFilter.setFilterKeyColumn(4)
 			self.__nettypeFilter.setFilterRegExp(QRegExp("*", Qt.CaseInsensitive, QRegExp.Wildcard))
