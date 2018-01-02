@@ -129,8 +129,13 @@ class CollectionWidget(QDropdownWidget):
 		#not raising cuz this is called deep through signal-slot mech, that cause exceptions to be fucked somewhere on the way
 		#raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
 
+	def _confirmRemove(self,index):
+		#reimplement this to add smth like confirmation window if needed
+		return True
+
 	def __removeItem(self,index):
-		self.model().removeRows(index.row(),1,QModelIndex())
+		if(self._confirmRemove(index)):
+			self.model().removeRows(index.row(),1,QModelIndex())
 
 
 ####Slots
@@ -139,13 +144,21 @@ class CollectionWidget(QDropdownWidget):
 		menu=QMenu('orders, captain?',self)
 		newaction=menu.addAction('choose this')
 		newaction.triggered.connect(self.accept)
+
 		sidemenu = menu.addMenu('add to collection')
 		for col in self.model().collections():
 			newaction=sidemenu.addAction(col.name())
 			newaction.setData((col))
 			newaction.triggered.connect(lambda : self._addItem(col))
 		menu.addSeparator()
-		newaction=menu.addAction('remove item')
+
+		sidemenu = menu.addMenu('item')
+		sidemenu.addAction('info')
+		sidemenu.addSeparator()
+		sidemenu.addAction('rename')
+		sidemenu.addAction('replace content')
+		sidemenu.addSeparator()
+		newaction=sidemenu.addAction('remove item')
 		newaction.triggered.connect(lambda : self.__removeItem(self._mapToSource(self.ui.mainView.currentIndex())))
 
 
