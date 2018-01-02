@@ -15,6 +15,13 @@ from collections.collectionbase import CollectionSyncError
 from collections.githubcollection import GithubCollection
 
 
+#TODO: add item-> menu with info edit(rename, edit description), replace content
+
+#TODO: add confirmation on item removal
+
+#TODO: implement some kind of collection rescan
+
+
 def githubAuth():
 
 	def urlopen_nt(req):
@@ -95,7 +102,7 @@ class HPasteCollectionWidget(object):
 				self.ui.mainView.horizontalHeader().hideSection(x)
 
 			self.__nepane=None
-			self.__netType='' 
+			self.__netType=''
 
 			self.__nettypeFilter=QSortFilterProxyModel(self)
 			self.__nettypeFilter.setFilterKeyColumn(4)
