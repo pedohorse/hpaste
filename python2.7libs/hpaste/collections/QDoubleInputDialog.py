@@ -52,7 +52,7 @@ class QDoubleInputDialog(QDialog):
 		dialog.ui_line2.setText(defVaule2)
 
 		res=dialog.exec_()
-		return (res,dialog.ui_line1.text(),dialog.ui_line2.text())
+		return (dialog.ui_line1.text(),dialog.ui_line2.text(),res)
 
 
 if(__name__=='__main__'):
