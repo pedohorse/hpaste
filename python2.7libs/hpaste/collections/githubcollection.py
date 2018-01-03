@@ -3,7 +3,7 @@ from pprint import pprint
 import base64
 import json
 
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError
 
 from logger import defaultLogger as log
 
@@ -128,6 +128,16 @@ class GithubCollection(CollectionBase):
 
 	def changeItem(self, item, newName=None, newDescription=None, newContent=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
+		#newName=str(newName)
+		#newDescription=str(newDescription)
+		#newContent=str(newContent)
+		#just in case we have random unicode coming in
+		#TODO: check that item belongs to this collection. just in case
+
+		if('nettype' not in item.metadata()):
+			item._invalidate()
+			raise CollectionItemInvalidError('required metadata was not found in the item')
+
 		id,name=item.id().split('@',1)
 		data={}
 		proceed=False
@@ -141,7 +151,7 @@ class GithubCollection(CollectionBase):
 			data={'files':{item.name():data}}
 
 		if(newDescription is not None):
-			data['description']=newDescription
+			data['description']=':'.join((item.metadata()['nettype'],newDescription))
 			proceed=True
 
 		if (not proceed): return
@@ -159,9 +169,14 @@ class GithubCollection(CollectionBase):
 		if(len(newfilenames)!=1):
 			raise CollectionInconsistentError('something went wrong during item changing')
 		newfilename=newfilenames[0]
-		item._description=gist['description']
+		desc = gist['description']
+		nettype = ''
+		if (':' in desc):
+			nettype, desc = desc.split(':', 1)
+		item._desc=desc
 		item._name=newfilename
 		item._meta['raw_url']=gist['files'][newfilename]['raw_url']
+		item._meta['nettype']=nettype
 		item._id='%s@%s'%(gist['id'],newfilename)
 
 
@@ -170,8 +185,10 @@ class GithubCollection(CollectionBase):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
 		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
 
-		if('nettype' in metadata):
-			description=":".join((metadata['nettype'],description))
+		if ('nettype' not in metadata):
+			raise CollectionItemInvalidError('required metadata must be present in metadata')
+
+		description=":".join((metadata['nettype'],description))
 		postdata = {'public': False, 'description': description}
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files'][desiredName] = {'content':content}
