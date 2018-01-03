@@ -23,78 +23,124 @@ from collections.QDoubleInputDialog import QDoubleInputDialog
 
 #TODO: implement some kind of collection rescan
 
+class GithubAuthorizator(object):
+	defaultdata = {'ver': '1.1', 'collections': []}
+	defaultentry = {'user': '', 'token': ''}
+	defaultfilename=os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_githubcollection')
 
-def githubAuth():
-
-	def urlopen_nt(req):
+	@classmethod
+	def urlopen_nt(cls, req):
 		code = -1
-		rep=None
+		rep = None
 		try:
 			rep = urllib2.urlopen(req)
 		except urllib2.HTTPError as e:
 			code = e.code
+		except urllib2.URLError as e:
+			raise CollectionSyncError('unable to reach github: %s' % e.reason)
 
 		if (code == -1): code = rep.getcode()
-		return code,rep
+		return code, rep
 
-	#TODO: Should be moved to a separate module with all kinds of auths
-	#should return token
+	@classmethod
+	def readAuthorizationsFile(cls):
+		#reads the config file
+		#if no config file - creates one
 
-	#check for saved token
-	defaultdata={'ver':'1.0','token':''}
-	filepath=os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.githubcollection')
+		filepath = cls.defaultfilename
+		try:
+			with open(filepath, 'r') as f:
+				data = json.load(f)
+			if ('ver' not in data): raise RuntimeError('file is not good')
+		except:
+			# file needs to be recreated
+			with open(filepath, 'w') as f:
+				json.dump(cls.defaultdata, f, indent=4)
+			data = dict(cls.defaultdata)  # copy
 
-	try:
-		with open(filepath,'r') as f:
-			data=json.load(f)
-		if('token' not in data):raise RuntimeError('file is not good')
-	except:
-		#file needs to be recreated
-		with open(filepath,'w') as f:
-			json.dump(defaultdata,f,indent=4)
-		data=dict(defaultdata) #copy
+		return data
 
-	token=data['token']
+	@classmethod
+	def newAuthorization(cls,auth=None):
+		# appends or changes auth in file
+		# auth parameter is used as default data when promped user, contents of auth will get replaced if user logins successfully
+		code=0
+		if(auth is None):
+			auth=dict(GithubAuthorizator.defaultentry) # copy
+
+		data=cls.readAuthorizationsFile()
+		newauth={}
+
+		while True:
+			btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'), initial_contents=(auth['user'],))
+			if(btn!=0):
+				if(auth is None):
+					return False
+				else:
+					btn=hou.ui.displayMessage('Do you want to remove account %s from remembered?'%auth['user'], buttons=('Yes','No'), close_choice=1)
+					if(btn==1):return False
+					oldones = [x for x in data['collections'] if x['user'] == auth['user']]
+					for old in oldones: data['collections'].remove(old)
+					try:
+						with open(cls.defaultfilename, 'w') as f:
+							json.dump(data, f, indent=4)
+					except:
+						hou.ui.displayMessage("writing token to file failed!")
+					return False
 
 
-	#test
-	headers={'User-Agent': 'HPaste', 'Authorization':'Token %s'%token}
-	req=urllib2.Request(r'https://api.github.com/user',headers=headers)
-	code,rep=urlopen_nt(req)
+			for attempt in xrange(10): #really crude way of avoiding conflicts for now
+				headers={'User-Agent': 'HPaste', 'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % (username, password))}
+				postdata={'scopes':['gist'],'note':'HPaste Collection Access at %s %d'%(socket.gethostname(),attempt)}
+				req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
+				code, rep = cls.urlopen_nt(req)
 
-	if (code == 200): return token
+				if(code == 201):
+					repdata=json.loads(rep.read())
 
-	#now something is wrong
-	while True:
-		btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'))
-		if(btn!=0):return None
+					newauth['token']=repdata['token'] #TODO: check if reply is as expected
+					newauth['user']=username
+					for key in newauth:auth[key]=newauth[key]
+					oldones=[x for x in data['collections'] if x['user']==username]
+					for old in oldones: data['collections'].remove(old)
+					data['collections'].append(newauth)
+					try:
+						with open(cls.defaultfilename,'w') as f:
+							json.dump(data, f, indent=4)
+					except:
+						hou.ui.displayMessage("writing token to file failed!")
+					return True
+				elif(code == 422):
+					#postdata was not accepted
+					#so we just make another attempt of creating a token (github requires unique note)
+					pass
+				elif(code == 401):
+					hou.ui.displayMessage('wrong username or password')
+					break
 
-		for attempt in xrange(10): #really crude way of avoiding conflicts for now
-			headers={'User-Agent': 'HPaste', 'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % (username, password))}
-			postdata={'scopes':['gist'],'note':'HPaste Collection Access at %s %d'%(socket.gethostname(),attempt)}
-			req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
-			code, rep = urlopen_nt(req)
+			hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+			return False
 
-			if(code == 201):
-				repdata=json.loads(rep.read())
+	@classmethod
+	def testAuthorization(cls,auth):
+		#auth is supposed to be a dict returned from listAuthorizations
+		#TODO: probably make a dedicatid class
+		headers = {'User-Agent': 'HPaste', 'Authorization': 'Token %s' % auth['token']}
+		req = urllib2.Request(r'https://api.github.com/user', headers=headers)
+		code, rep = cls.urlopen_nt(req)
 
-				data['token']=repdata['token'] #TODO: check if reply is as expected
-				try:
-					with open(filepath,'w') as f:
-						json.dump(data,f)
-				except:
-					hou.ui.displayMessage("writing token to file failed!")
-				return data['token']
-			elif(code == 422):
-				#data was not accepted
-				#TODO: do
-				pass
-			elif(code == 401):
-				hou.ui.displayMessage('wrong username or password')
-				break
+		return code == 200
 
-		hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
-		return None
+	@classmethod
+	def listAuthorizations(cls):
+		#TODO: Should be moved to a separate module with all kinds of auths
+		#should return tuple of authorization dicts
+
+		data=cls.readAuthorizationsFile()
+
+		return tuple(data['collections'])
+
+
 
 class HPasteCollectionWidget(object):
 	class __HPasteCollectionWidget(CollectionWidget):
@@ -186,14 +232,31 @@ class HPasteCollectionWidget(object):
 	__instance=None
 	def __init__(self,parent):
 		if(HPasteCollectionWidget.__instance is None):
+			HPasteCollectionWidget.__instance = HPasteCollectionWidget.__HPasteCollectionWidget(parent)
 			try:
-				token=githubAuth()
+				auths=[]
+				while len(auths)==0:
+					auths=list(GithubAuthorizator.listAuthorizations())
+					if(len(auths)==0):
+						if(GithubAuthorizator.newAuthorization()):
+							continue
+						else:
+							raise RuntimeError("No collections")
+					#test
+					todel=[]
+					for auth in auths:
+						if(not GithubAuthorizator.testAuthorization(auth)):
+							if(not GithubAuthorizator.newAuthorization(auth)):
+								todel.append(auth)
+					for d in todel:
+						auths.remove(d)
 			except Exception as e:
 				hou.ui.displayMessage('Something went wrong.\n%s'%e.message)
 				self.__instance=None
-				raise RuntimeError('FAILED')
-			HPasteCollectionWidget.__instance = HPasteCollectionWidget.__HPasteCollectionWidget(parent)
-			HPasteCollectionWidget.__instance.addCollection(GithubCollection(token))
+				raise
+
+			for auth in auths:
+				HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']))
 
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
 			print("reparenting")
