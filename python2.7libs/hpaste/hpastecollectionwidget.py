@@ -9,10 +9,12 @@ import hou
 from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
 from PySide2.QtWidgets import QInputDialog,QMessageBox
 
+
 import hpaste
 from collections.collectionwidget import CollectionWidget
 from collections.collectionbase import CollectionSyncError
 from collections.githubcollection import GithubCollection
+from collections.QDoubleInputDialog import QDoubleInputDialog
 
 
 #TODO: add item-> menu with info edit(rename, edit description), replace content
@@ -157,6 +159,25 @@ class HPasteCollectionWidget(object):
 				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
 				QMessageBox.critical(self,'something went wrong!','Network error occured: %s'%e.message)
+
+		def _itemInfo(self, index):
+			item=index.internalPointer()
+			info='name: %s\n%s\ncollection id: %s\n\nmetadata:\n'%(item.name(),item.description(),item.id())
+			info+='\n'.join(('%s : %s'%(key,item.metadata()[key]) for key in item.metadata()))
+
+			QMessageBox.information(self,'item information', info)
+
+		def _renameItem(self, index):
+			item=index.internalPointer()
+			oldname=item.name()
+			olddesc=item.description()
+			newname,newdesc,good=QDoubleInputDialog.getDoubleText(self,'modify item info','Enter new item name and description','name','description',oldname,olddesc)
+			if(not good):return
+			if(newname!=oldname):item.setName(newname)
+			if(newdesc!=olddesc):item.setDescription(newdesc)
+
+		def _replaceContent(self, index):
+			log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
 
 		def _confirmRemove(self,index):
 			return QMessageBox.warning(self,'sure?','confirm removing the item from collection',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
