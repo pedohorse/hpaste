@@ -154,7 +154,7 @@ from PySide2.QtWidgets import QInputDialog
 import hpaste.hpastecollectionwidget
 #reload(hpaste.hpastecollectionwidget)
 #from hpaste import getChildContext
-from hpaste.hpastecollectionwidget import HPasteCollectionWidget,githubAuth
+from hpaste.hpastecollectionwidget import HPasteCollectionWidget
 
 
 #print(kwargs)
