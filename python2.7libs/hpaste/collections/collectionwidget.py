@@ -129,6 +129,15 @@ class CollectionWidget(QDropdownWidget):
 		#not raising cuz this is called deep through signal-slot mech, that cause exceptions to be fucked somewhere on the way
 		#raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
 
+	def _itemInfo(self,index):
+		log('_itemInfo should be reimplemented in subclass to do what is needed in any specific situation',3)
+
+	def _renameItem(self,index):
+		log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
+
+	def _replaceContent(self,index):
+		log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
+
 	def _confirmRemove(self,index):
 		#reimplement this to add smth like confirmation window if needed
 		return True
@@ -152,14 +161,19 @@ class CollectionWidget(QDropdownWidget):
 			newaction.triggered.connect(lambda : self._addItem(col))
 		menu.addSeparator()
 
+		cindex=self._mapToSource(self.ui.mainView.currentIndex())
 		sidemenu = menu.addMenu('item')
-		sidemenu.addAction('info')
+		newaction = sidemenu.addAction('info')
+		newaction.triggered.connect(lambda :self._itemInfo(cindex))
 		sidemenu.addSeparator()
-		sidemenu.addAction('rename')
-		sidemenu.addAction('replace content')
+		newaction = sidemenu.addAction('rename')
+		newaction.triggered.connect(lambda :self._renameItem(cindex))
+		newaction = sidemenu.addAction('replace content')
+		newaction.setEnabled(False)
+		#TODO: automatically enable stuff if subclass overrides item methods!
 		sidemenu.addSeparator()
-		newaction=sidemenu.addAction('remove item')
-		newaction.triggered.connect(lambda : self.__removeItem(self._mapToSource(self.ui.mainView.currentIndex())))
+		newaction = sidemenu.addAction('remove item')
+		newaction.triggered.connect(lambda : self.__removeItem(cindex))
 
 
 		menu.popup(self.mapToGlobal(pos))
