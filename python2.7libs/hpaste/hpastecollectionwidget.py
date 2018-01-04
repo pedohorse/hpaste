@@ -17,16 +17,13 @@ from collections.githubcollection import GithubCollection
 from collections.QDoubleInputDialog import QDoubleInputDialog
 
 
-#TODO: add item-> menu with info edit(rename, edit description), replace content
-
-#TODO: add confirmation on item removal
-
 #TODO: implement some kind of collection rescan
 
 class GithubAuthorizator(object):
-	defaultdata = {'ver': '1.1', 'collections': []}
+	defaultdata = {'ver': '1.2', 'collections': [], 'publiccollections': []}
 	defaultentry = {'user': '', 'token': ''}
 	defaultfilename=os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_githubcollection')
+	#TODO: 2 factor authorization needs to be implemented !!
 
 	@classmethod
 	def urlopen_nt(cls, req):
@@ -139,6 +136,11 @@ class GithubAuthorizator(object):
 		data=cls.readAuthorizationsFile()
 
 		return tuple(data['collections'])
+
+	@classmethod
+	def listPublicCollections(cls):
+		data=cls.readAuthorizationsFile()
+		return data['publiccollections']
 
 
 
@@ -257,6 +259,17 @@ class HPasteCollectionWidget(object):
 
 			for auth in auths:
 				HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']))
+
+			#now public collections
+
+			cols=GithubAuthorizator.listPublicCollections()
+			for col in cols:
+				try:
+					#TODO: test if collection works
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'],public=True))
+				except:
+					hou.ui.displayMessage('unable to load public collection %s'%col['user'])
+					raise
 
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
 			print("reparenting")
