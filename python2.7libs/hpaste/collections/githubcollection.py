@@ -1,9 +1,8 @@
 import urllib2
-from pprint import pprint
-import base64
 import json
+import copy
 
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError
 
 from logger import defaultLogger as log
 
@@ -33,19 +32,11 @@ class GithubCollection(CollectionBase):
 
 		self.__token=str(token)
 		self.__headers= {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token}
-		#{'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % ('pedohorse', 'TentacleRapedH0lk'))}
+
 
 		#if token is bad - we will be thrown from here with InvalidToken exception
 		self.__name='invalid'
 		self._rescanName()
-
-	def test(self):
-		req = urllib2.Request('https://api.github.com/authorizations', headers=self.__headers)
-		rep = urllib2.urlopen(req)
-		reps = rep.read()
-		print(reps)
-		r = json.loads(reps)
-		pprint(r)
 
 	def name(self):
 		return self.__name
@@ -94,7 +85,8 @@ class GithubCollection(CollectionBase):
 			for filename in files:
 				filedata=files[filename]
 				rawurl=filedata['raw_url']
-				newitem=CollectionItem(self,filename,desc,'%s@%s'%(gist['id'],filename),{'raw_url':rawurl,'nettype':nettype})
+				retaccess = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
+				newitem=CollectionItem(self,filename,desc,'%s@%s'%(gist['id'],filename),retaccess,False,metadata={'raw_url':rawurl,'nettype':nettype})
 				res.append(newitem)
 
 		return tuple(res)
@@ -126,13 +118,29 @@ class GithubCollection(CollectionBase):
 
 		return data
 
-	def changeItem(self, item, newName=None, newDescription=None, newContent=None):
+	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 		#newName=str(newName)
 		#newDescription=str(newDescription)
 		#newContent=str(newContent)
 		#just in case we have random unicode coming in
 		#TODO: check that item belongs to this collection. just in case
+		if (item.readonly()):raise CollectionItemReadonlyError()
+		if (newAccess is not None and newAccess!=item.access()):
+			#raise NotImplementedError('not yet implemented')
+
+			newitem=self.addItem(item.name() if newName is None else newName, item.description() if newDescription is None else newDescription, item.content() if newContent is None else newContent,newAccess,item.metadata())
+			self.removeItem(copy.copy(item))  # remove the copy cuz item gets invalidated and we dont want that for original item
+			item._name = newitem._name
+			item._desc = newitem._desc
+			item._meta['raw_url'] = newitem._meta['raw_url']
+			item._meta['nettype'] = newitem._meta['nettype']
+			item._id = newitem._id
+			item._access=newitem._access
+			item._readonly=newitem._readonly
+
+			#TODO: if access is changed - we have to destroy this gist and create a new one with proper 'public' key
+			# Butt Beware - we need to modify item's contents and return it WITHOUT reassigning the item itself
 
 		if('nettype' not in item.metadata()):
 			item._invalidate()
@@ -178,18 +186,21 @@ class GithubCollection(CollectionBase):
 		item._meta['raw_url']=gist['files'][newfilename]['raw_url']
 		item._meta['nettype']=nettype
 		item._id='%s@%s'%(gist['id'],newfilename)
+		item._access= CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
+		item._readonly=False
 
 
 
-	def addItem(self,desiredName,description,content,metadata=None):
+	def addItem(self,desiredName,description,content, access=CollectionItem.AccessType.private, metadata=None):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
 		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
+		assert access==0 or access==1, 'wrong access type'  #TODO there's no other type enforcement for this const for now
 
 		if ('nettype' not in metadata):
 			raise CollectionItemInvalidError('required metadata must be present in metadata')
 
 		description=":".join((metadata['nettype'],description))
-		postdata = {'public': False, 'description': description}
+		postdata = {'public': access==CollectionItem.AccessType.public, 'description': description}
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files'][desiredName] = {'content':content}
 		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
@@ -211,11 +222,14 @@ class GithubCollection(CollectionBase):
 		if (':' in desc):
 			nettype, desc = desc.split(':', 1)
 		metadata['nettype']=nettype
-		newitem=CollectionItem(self,newfilename,desc,'%s@%s' % (gist['id'], newfilename),metadata)
+		retaccess=CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
+		newitem=CollectionItem(self,newfilename,desc,'%s@%s' % (gist['id'], newfilename),retaccess,False,metadata)
 		return newitem
 
 	def removeItem(self,item):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
+		if (item.readonly()): raise CollectionItemReadonlyError()
+
 		id, name = item.id().split('@', 1)
 
 		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
@@ -232,7 +246,7 @@ if(__name__=='__main__'):
 	#testing
 
 	testToken = ''
-	with open(path.join(path.dirname(path.dirname(path.dirname(__file__))), 'githubtoken.tok'),'r') as f:
+	with open(path.join(path.dirname(path.dirname(path.dirname(path.dirname(__file__)))), 'githubtoken.tok'),'r') as f:
 		testToken=f.read()
 		testToken=testToken.replace('\n','')
 	print(testToken)

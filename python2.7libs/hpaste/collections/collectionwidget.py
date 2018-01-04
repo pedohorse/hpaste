@@ -131,6 +131,10 @@ class CollectionWidget(QDropdownWidget):
 
 	def _itemInfo(self,index):
 		log('_itemInfo should be reimplemented in subclass to do what is needed in any specific situation',3)
+		item=index.internalPointer()
+		stuff=vars(item)
+		for v in stuff:
+			log(v+' : '+repr(stuff[v]),2)
 
 	def _renameItem(self,index):
 		log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
@@ -162,18 +166,20 @@ class CollectionWidget(QDropdownWidget):
 		menu.addSeparator()
 
 		cindex=self._mapToSource(self.ui.mainView.currentIndex())
+		item=cindex.internalPointer()
 		sidemenu = menu.addMenu('item')
 		newaction = sidemenu.addAction('info')
-		newaction.triggered.connect(lambda :self._itemInfo(cindex))
-		sidemenu.addSeparator()
-		newaction = sidemenu.addAction('rename')
-		newaction.triggered.connect(lambda :self._renameItem(cindex))
-		newaction = sidemenu.addAction('replace content')
-		newaction.setEnabled(False)
-		#TODO: automatically enable stuff if subclass overrides item methods!
-		sidemenu.addSeparator()
-		newaction = sidemenu.addAction('remove item')
-		newaction.triggered.connect(lambda : self.__removeItem(cindex))
+		newaction.triggered.connect(lambda: self._itemInfo(cindex))
+		if(not item.readonly()):
+			sidemenu.addSeparator()
+			newaction = sidemenu.addAction('rename')
+			newaction.triggered.connect(lambda :self._renameItem(cindex))
+			newaction = sidemenu.addAction('replace content')
+			newaction.setEnabled(False)
+			#TODO: automatically enable stuff if subclass overrides item methods!
+			sidemenu.addSeparator()
+			newaction = sidemenu.addAction('remove item')
+			newaction.triggered.connect(lambda : self.__removeItem(cindex))
 
 
 		menu.popup(self.mapToGlobal(pos))
@@ -184,7 +190,7 @@ if(__name__=='__main__'):
 	class FakeCollection(collectionbase.CollectionBase):
 		def __init__(self):
 			super(FakeCollection,self).__init__()
-			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat %s'%(x*2),'testnoid',{'raw_url':'https://fuck','nettype':'WOOF'}) for x in xrange(100)]
+			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat %s'%(x*2),'testnoid',x%2,x%4<2,metadata={'raw_url':'https://fuck','nettype':'WOOF'}) for x in xrange(100)]
 
 		def name(self):
 			return 'testname'

@@ -16,12 +16,24 @@ class CollectionItemInvalidError(Exception):
 	def __init__(self,message='Item is Invalid. Maybe it was removed from collection.'):
 		super(CollectionItemInvalidError,self).__init__(message)
 
+class CollectionItemReadonlyError(Exception):
+	#item is readonly but someone tries to modify it
+	def __init__(self,message='Item is readonly!'):
+		super(CollectionItemReadonlyError,self).__init__(message)
+
+
 class CollectionItem(object):
-	def __init__(self,collection,name,description,id,metadata=None):
+	class AccessType:
+		private=0
+		public=1
+
+	def __init__(self,collection,name,description,id,access=AccessType.private,readonly=False,metadata=None):
 		self._collection=collection
 		self._name=name			#Name
 		self._desc=description		#Description
 		self._id=id				#ID inside collection
+		self._access=access
+		self._readonly=readonly
 		self._meta=metadata		#Metadata
 		self.__valid=True
 		#wid is not stored cuz it may be generated dynamically
@@ -38,6 +50,14 @@ class CollectionItem(object):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._id
 
+	def access(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		return self._access
+
+	def readonly(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		return self._readonly
+
 	def metadata(self):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		return self._meta
@@ -52,18 +72,28 @@ class CollectionItem(object):
 
 	def setName(self,newname):
 		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self,newName=newname)
 
 	def setContent(self,newcontent):
 		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, newContent=newcontent)
 
 	def setDescription(self,newdescription):
 		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, newDescription=newdescription)
+
+	def setAccess(self,newaccess):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
+		self._collection.changeItem(self, newAccess=newaccess)
 
 	def removeSelf(self):
 		#WARNING! item will be invalidated if removed!
+		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.removeItem(self)
 
 	def isValid(self):
@@ -101,11 +131,11 @@ class CollectionBase(object):
 		#this should bring the raw content of the collection item.
 		raise NotImplementedError('Abstract method')
 
-	def changeItem(self,item,newName=None,newDescription=None,newContent=None):
+	def changeItem(self,item,newName=None,newDescription=None,newContent=None,newAccess=None):
 		#change an item
 		raise NotImplementedError('Abstract method')
 
-	def addItem(self, desiredName, description, content, metadata=None):
+	def addItem(self, desiredName, description, content, access=CollectionItem.AccessType.private,metadata=None):
 		#add a new item
 		#should return CollectionItem
 		raise NotImplementedError('Abstract method')
