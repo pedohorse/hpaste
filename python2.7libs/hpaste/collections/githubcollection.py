@@ -27,21 +27,28 @@ class InvalidToken(CollectionSyncError):
 class GithubCollection(CollectionBase):
 
 
-	def __init__(self, token):
-		assert isinstance(token,str) or isinstance(token,unicode), 'token must be a str'
+	def __init__(self, token_or_username, public=False):
+		assert isinstance(token_or_username,str) or isinstance(token_or_username,unicode), 'token must be a str'
 
-		self.__token=str(token)
-		self.__headers= {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token}
+		if(public):
+			self.__token = None
+			self.__headers = {'User-Agent': 'HPaste'}
+			self.__readonly = True
+			self.__name=token_or_username
+		else:
+			self.__token=str(token_or_username)
+			self.__headers = {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token}
+			self.__readonly = False
 
-
-		#if token is bad - we will be thrown from here with InvalidToken exception
-		self.__name='invalid'
-		self._rescanName()
+			#if token is bad - we will be thrown from here with InvalidToken exception
+			self.__name='invalid'
+			self._rescanName()
 
 	def name(self):
 		return self.__name
 
 	def _rescanName(self):
+		if(self.__readonly):return
 		req=urllib2.Request(r'https://api.github.com/user',headers=self.__headers)
 		code,rep=urlopen_nt(req)
 		if (code != 200):
@@ -56,7 +63,9 @@ class GithubCollection(CollectionBase):
 		#this should produce list of snippets in the collection
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
-		req=urllib2.Request(r'https://api.github.com/gists',headers=self.__headers)
+		requrl=r'https://api.github.com/gists'
+		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists'%self.__name
+		req=urllib2.Request(requrl,headers=self.__headers)
 		code, rep = urlopen_nt(req)
 
 		if(code!=200):
@@ -86,7 +95,7 @@ class GithubCollection(CollectionBase):
 				filedata=files[filename]
 				rawurl=filedata['raw_url']
 				retaccess = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
-				newitem=CollectionItem(self,filename,desc,'%s@%s'%(gist['id'],filename),retaccess,False,metadata={'raw_url':rawurl,'nettype':nettype})
+				newitem=CollectionItem(self, filename, desc, '%s@%s'%(gist['id'], filename), retaccess, self.__readonly, metadata={'raw_url':rawurl,'nettype':nettype})
 				res.append(newitem)
 
 		return tuple(res)
@@ -195,6 +204,8 @@ class GithubCollection(CollectionBase):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
 		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
 		assert access==0 or access==1, 'wrong access type'  #TODO there's no other type enforcement for this const for now
+
+		if(self.__readonly):raise CollectionItemReadonlyError('collection is opened as read-only!')
 
 		if ('nettype' not in metadata):
 			raise CollectionItemInvalidError('required metadata must be present in metadata')
