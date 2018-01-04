@@ -13,13 +13,13 @@ class CollectionSyncError(Exception):
 
 class CollectionItemInvalidError(Exception):
 	#item was destroyed, but still addressed
-	def __init__(self,message='Item is Invalid. Maybe it was removed from collection.'):
-		super(CollectionItemInvalidError,self).__init__(message)
+	def __init__(self,message='Maybe it was removed from collection.'):
+		super(CollectionItemInvalidError,self).__init__('Item was invalidated: '+message)
 
 class CollectionItemReadonlyError(Exception):
 	#item is readonly but someone tries to modify it
 	def __init__(self,message='Item is readonly!'):
-		super(CollectionItemReadonlyError,self).__init__(message)
+		super(CollectionItemReadonlyError,self).__init__('Readonly access violation attempt: '+message)
 
 
 class CollectionItem(object):
