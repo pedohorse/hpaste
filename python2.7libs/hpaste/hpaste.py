@@ -228,12 +228,20 @@ def stringToNodes(s, hou_parent = None, ne = None):
 
 		if(len(newitems)==0):return
 		#calc center
-		cpos=hou.Vector2()
+		cpos = hou.Vector2()
+		bbmin = hou.Vector2()
+		bbmax = hou.Vector2()
 		cnt=0
 		for item in newitems:
 			cnt+=1
-			cpos+=item.position()
+			pos=item.position()
+			cpos+=pos
+			for i in [0,1]:
+				if (pos[i] > bbmax[i]): bbmax[i] = pos[i]
+				if (pos[i] < bbmin[i]): bbmin[i] = pos[i]
+
 		cpos=cpos/cnt
+		cpos[1]=bbmax[1]
 		offset=ne.cursorPosition()-cpos
 		for item in newitems:
 			item.move(offset)
