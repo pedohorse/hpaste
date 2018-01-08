@@ -16,7 +16,17 @@ class CollectionItemInvalidError(Exception):
 	def __init__(self,message='Maybe it was removed from collection.'):
 		super(CollectionItemInvalidError,self).__init__('Item was invalidated: '+message)
 
-class CollectionItemReadonlyError(Exception):
+class CollectionAccessError(Exception):
+	# item is readonly but someone tries to modify it
+	def __init__(self, message='access violation'):
+		super(CollectionAccessError, self).__init__('Access violation attempt: ' + message) #TODO: make universal access checking thingie, and access error exceptions hierarchy
+
+class CollectionReadonlyError(CollectionAccessError):
+	#item is readonly but someone tries to modify it
+	def __init__(self,message='Collection is readonly!'):
+		super(CollectionReadonlyError,self).__init__('Readonly access violation attempt: '+message)
+
+class CollectionItemReadonlyError(CollectionAccessError):
 	#item is readonly but someone tries to modify it
 	def __init__(self,message='Item is readonly!'):
 		super(CollectionItemReadonlyError,self).__init__('Readonly access violation attempt: '+message)
@@ -120,6 +130,9 @@ class CollectionBase(object):
 	def reinit(self):
 		#this method should completely reread everything
 		#rendering all existing items invalid
+		raise NotImplementedError('Abstract method')
+
+	def readonly(self):
 		raise NotImplementedError('Abstract method')
 
 	def genWid(self,item):

@@ -42,17 +42,35 @@ class QDoubleInputDialog(QDialog):
 		self.ui_label2.setText('label2')
 
 	@classmethod
-	def getDoubleText(cls,parent,title,text,label1,label2,defValue1='',defVaule2=''):
+	def getDoubleText(cls,parent,title,text,label1,label2,defValue1='',defValue2=''):
 		dialog=QDoubleInputDialog(parent)
 		dialog.setWindowTitle(title)
 		dialog.ui_text.setText(text)
 		dialog.ui_label1.setText(label1)
 		dialog.ui_label2.setText(label2)
 		dialog.ui_line1.setText(defValue1)
-		dialog.ui_line2.setText(defVaule2)
+		dialog.ui_line2.setText(defValue2)
 
 		res=dialog.exec_()
 		return (dialog.ui_line1.text(),dialog.ui_line2.text(),res)
+
+	@classmethod
+	def getDoubleTextCheckbox(cls,parent,title,text,label1,label2,label3,defValue1='',defValue2='',defCheckbox=False):
+		dialog = QDoubleInputDialog(parent)
+		dialog.setWindowTitle(title)
+		dialog.ui_text.setText(text)
+		dialog.ui_label1.setText(label1)
+		dialog.ui_label2.setText(label2)
+		dialog.ui_line1.setText(defValue1)
+		dialog.ui_line2.setText(defValue2)
+		dialog.ui_checkbox=QCheckBox(label3,dialog)
+		dialog.ui_mainLayout.removeItem(dialog.ui_buttonLayout)
+		dialog.ui_mainLayout.addLayout(dialog.ui_buttonLayout,4,1)
+		dialog.ui_mainLayout.addWidget(dialog.ui_checkbox,3,1)
+		dialog.ui_checkbox.setChecked(defCheckbox)
+
+		res = dialog.exec_()
+		return (dialog.ui_line1.text(), dialog.ui_line2.text(), dialog.ui_checkbox.isChecked(), res)
 
 
 if(__name__=='__main__'):
@@ -62,5 +80,6 @@ if(__name__=='__main__'):
 	qapp = QApplication(sys.argv)
 
 
-	print(QDoubleInputDialog.getDoubleText(None,'woof','bark on me twice','first one','and the second one','bark1','bark2'))
+	#print(QDoubleInputDialog.getDoubleText(None,'woof','bark on me twice','first one','and the second one','bark1','bark2'))
+	print(QDoubleInputDialog.getDoubleTextCheckbox(None, 'woof', 'bark on me twice', 'first one', 'and the second one', 'check this', 'bark1', 'bark2', True))
 	#sys.exit(qapp.exec_())

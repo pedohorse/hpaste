@@ -2,7 +2,7 @@ import urllib2
 import json
 import copy
 
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
 
 from logger import defaultLogger as log
 
@@ -27,12 +27,14 @@ class InvalidToken(CollectionSyncError):
 class GithubCollection(CollectionBase):
 
 
-	def __init__(self, token_or_username, public=False):
+	def __init__(self, token_or_username, public=False, token_for_public_access=None):
 		assert isinstance(token_or_username,str) or isinstance(token_or_username,unicode), 'token must be a str'
 
 		if(public):
 			self.__token = None
 			self.__headers = {'User-Agent': 'HPaste'}
+			if(token_for_public_access is not None):
+				self.__headers['Authorization']='Token %s'%token_for_public_access
 			self.__readonly = True
 			self.__name=token_or_username
 		else:
@@ -127,6 +129,9 @@ class GithubCollection(CollectionBase):
 
 		return data
 
+	def readonly(self):
+		return self.__readonly
+
 	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 		#newName=str(newName)
@@ -134,7 +139,7 @@ class GithubCollection(CollectionBase):
 		#newContent=str(newContent)
 		#just in case we have random unicode coming in
 		#TODO: check that item belongs to this collection. just in case
-		if (item.readonly()):raise CollectionItemReadonlyError()
+		if (item.readonly()):raise CollectionReadonlyError()
 		if (newAccess is not None and newAccess!=item.access()):
 			#raise NotImplementedError('not yet implemented')
 
@@ -205,7 +210,7 @@ class GithubCollection(CollectionBase):
 		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
 		assert access==0 or access==1, 'wrong access type'  #TODO there's no other type enforcement for this const for now
 
-		if(self.__readonly):raise CollectionItemReadonlyError('collection is opened as read-only!')
+		if(self.__readonly):raise CollectionReadonlyError('collection is opened as read-only!')
 
 		if ('nettype' not in metadata):
 			raise CollectionItemInvalidError('required metadata must be present in metadata')
@@ -239,7 +244,7 @@ class GithubCollection(CollectionBase):
 
 	def removeItem(self,item):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
-		if (item.readonly()): raise CollectionItemReadonlyError()
+		if (item.readonly()): raise CollectionReadonlyError()
 
 		id, name = item.id().split('@', 1)
 

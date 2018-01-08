@@ -33,9 +33,10 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList+=tmplist
 		self.endInsertRows()
 
-	def addItemToCollection(self, collection, desiredName, description, content, metadata=None):
+	def addItemToCollection(self, collection, desiredName, description, content, public, metadata=None):
 		if(collection not in self.__collections):raise ValueError('collection must belong to the model')
-		newitem=collection.addItem(desiredName, description, content, metadata)
+		access=collectionbase.CollectionItem.AccessType.public if public else collectionbase.CollectionItem.AccessType.private
+		newitem=collection.addItem(desiredName, description, content, access,metadata=metadata)
 
 		nextid=len(self.__itemList)
 		self.beginInsertRows(QModelIndex(),nextid,nextid)
@@ -139,6 +140,9 @@ class CollectionWidget(QDropdownWidget):
 	def _renameItem(self,index):
 		log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
 
+	def _changeAccess(self,index):
+		log('_changeAccess should be reimplemented in subclass to do what is needed in any specific situation', 3)
+
 	def _replaceContent(self,index):
 		log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
 
@@ -158,28 +162,35 @@ class CollectionWidget(QDropdownWidget):
 		newaction=menu.addAction('choose this')
 		newaction.triggered.connect(self.accept)
 
-		sidemenu = menu.addMenu('add to collection')
+		sidemenu = menu.addMenu('collections')
 		for col in self.model().collections():
-			newaction=sidemenu.addAction(col.name())
-			newaction.setData((col))
-			newaction.triggered.connect(lambda : self._addItem(col))
+			colmenu=sidemenu.addMenu(col.name())
+			if(col.readonly()):
+				newaction=colmenu.addAction('collection is READONLY')
+				newaction.setEnabled(False)
+			else:
+				newaction=colmenu.addAction('add selected nodes')
+				newaction.setData((col))
+				newaction.triggered.connect(lambda x=col: self._addItem(x))
 		menu.addSeparator()
 
 		cindex=self._mapToSource(self.ui.mainView.currentIndex())
 		item=cindex.internalPointer()
 		sidemenu = menu.addMenu('item')
 		newaction = sidemenu.addAction('info')
-		newaction.triggered.connect(lambda: self._itemInfo(cindex))
+		newaction.triggered.connect(lambda x=cindex: self._itemInfo(x))
 		if(not item.readonly()):
 			sidemenu.addSeparator()
 			newaction = sidemenu.addAction('rename')
-			newaction.triggered.connect(lambda :self._renameItem(cindex))
+			newaction.triggered.connect(lambda x=cindex:self._renameItem(x))
+			newaction = sidemenu.addAction('change access')
+			newaction.triggered.connect(lambda x=cindex:self._changeAccess(x))
 			newaction = sidemenu.addAction('replace content')
 			newaction.setEnabled(False)
 			#TODO: automatically enable stuff if subclass overrides item methods!
 			sidemenu.addSeparator()
 			newaction = sidemenu.addAction('remove item')
-			newaction.triggered.connect(lambda : self.__removeItem(cindex))
+			newaction.triggered.connect(lambda x=cindex: self.__removeItem(x))
 
 
 		menu.popup(self.mapToGlobal(pos))

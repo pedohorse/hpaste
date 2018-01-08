@@ -12,7 +12,7 @@ from PySide2.QtWidgets import QInputDialog,QMessageBox
 
 import hpaste
 from collections.collectionwidget import CollectionWidget
-from collections.collectionbase import CollectionSyncError
+from collections.collectionbase import CollectionSyncError,CollectionItem
 from collections.githubcollection import GithubCollection
 from collections.QDoubleInputDialog import QDoubleInputDialog
 
@@ -179,6 +179,7 @@ class HPasteCollectionWidget(object):
 		def doOnAccept(self,item):
 			if(item is None):return
 			try:
+				hou.clearAllSelected()
 				hpaste.stringToNodes(item.content(),ne=self.__nepane)
 			except Exception as e:
 				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)
@@ -193,9 +194,7 @@ class HPasteCollectionWidget(object):
 
 			while True:
 				#btn,(name,desc) = (0,('1','2'))#hou.ui.readMultiInput('enter some information about new item',('name','description'),buttons=('Ok','Cancel'))
-				name,good=QInputDialog.getText(self,'need a name','enter name for the new snippet')
-				if(not good):return
-				desc,good=QInputDialog.getText(self,'need description','enter description for the new snippet',text='a snippet')
+				name, desc, public, good = QDoubleInputDialog.getDoubleTextCheckbox(self,'adding a new item to %s'%collection.name(),'enter new item details','name','description','public', '','a snippet',False)
 				if(not good):return
 
 				if(len(name)>0):break; #validity check
@@ -204,13 +203,24 @@ class HPasteCollectionWidget(object):
 				#print(name)
 				#print(desc)
 				#print(hpaste.nodesToString(nodes))
-				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),metadata={'nettype':self.__netType})
+				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),public, metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
 				QMessageBox.critical(self,'something went wrong!','Network error occured: %s'%e.message)
 
+		def _changeAccess(self, index):
+			item = index.internalPointer()
+			text,good = QInputDialog.getItem(None, 'modify item access', 'choose new access type:', ['private', 'public'], current=item.access()==CollectionItem.AccessType.public, editable=False)
+			if(not good):return
+			newaccess=CollectionItem.AccessType.public if text=='public' else CollectionItem.AccessType.private
+			if(newaccess==item.access()):return
+			item.setAccess(newaccess)
+
+
 		def _itemInfo(self, index):
 			item=index.internalPointer()
-			info='name: %s\n%s\ncollection id: %s\n\nmetadata:\n'%(item.name(),item.description(),item.id())
+			accesstext='public' if item.access()==CollectionItem.AccessType.public else 'private'
+			readonlytext='readonly' if item.readonly() else 'editable'
+			info='name: %s\n%s\naccess: %s\n%s\n\ncollection id: %s\n\nmetadata:\n'%(item.name(),item.description(),accesstext,readonlytext,item.id())
 			info+='\n'.join(('%s : %s'%(key,item.metadata()[key]) for key in item.metadata()))
 
 			QMessageBox.information(self,'item information', info)
@@ -224,8 +234,8 @@ class HPasteCollectionWidget(object):
 			if(newname!=oldname):item.setName(newname)
 			if(newdesc!=olddesc):item.setDescription(newdesc)
 
-		def _replaceContent(self, index):
-			log('_renameItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
+		#def _replaceContent(self, index):
+			#pass
 
 		def _confirmRemove(self,index):
 			return QMessageBox.warning(self,'sure?','confirm removing the item from collection',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
@@ -266,7 +276,11 @@ class HPasteCollectionWidget(object):
 			for col in cols:
 				try:
 					#TODO: test if collection works
-					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'],public=True))
+					ptkn=None
+					if(len(auths)>0):
+						import random
+						ptkn=random.sample(auths,1)[0]['token']
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn))
 				except:
 					hou.ui.displayMessage('unable to load public collection %s'%col['user'])
 					raise
