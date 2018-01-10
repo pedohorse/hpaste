@@ -55,6 +55,20 @@ class QDoubleInputDialog(QDialog):
 		return (dialog.ui_line1.text(),dialog.ui_line2.text(),res)
 
 	@classmethod
+	def getUserPassword(cls, parent, title, text, label1, label2, defValue1='', defValue2=''):
+		dialog = QDoubleInputDialog(parent)
+		dialog.setWindowTitle(title)
+		dialog.ui_text.setText(text)
+		dialog.ui_label1.setText(label1)
+		dialog.ui_label2.setText(label2)
+		dialog.ui_line1.setText(defValue1)
+		dialog.ui_line2.setText(defValue2)
+		dialog.ui_line2.setEchoMode(QLineEdit.Password)
+
+		res = dialog.exec_()
+		return (dialog.ui_line1.text(), dialog.ui_line2.text(), res)
+
+	@classmethod
 	def getDoubleTextCheckbox(cls,parent,title,text,label1,label2,label3,defValue1='',defValue2='',defCheckbox=False):
 		dialog = QDoubleInputDialog(parent)
 		dialog.setWindowTitle(title)
