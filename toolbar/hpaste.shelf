@@ -149,9 +149,10 @@ do(kwargs['pane'])
 
   <tool name="hpastecollection" label="Collection" icon="PLASMA_App">
     <script scriptType="python"><![CDATA[from PySide2.QtGui import QCursor
-from PySide2.QtWidgets import QInputDialog
+from PySide2.QtWidgets import QInputDialog, qApp
+from PySide2.QtCore import Qt
 
-import hpaste.hpastecollectionwidget
+#import hpaste.hpastecollectionwidget
 #reload(hpaste.hpastecollectionwidget)
 #from hpaste import getChildContext
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget
@@ -163,7 +164,12 @@ def do(kwargs):
     if(pane is None or not isinstance(pane,hou.NetworkEditor)):
         return
     
-    wid=HPasteCollectionWidget(hou.qt.mainWindow())
+    qApp.setOverrideCursor(Qt.WaitCursor)
+    try:
+        wid=HPasteCollectionWidget(hou.qt.mainWindow())
+    finally:
+        qApp.restoreOverrideCursor()
+    
     wid.move(QCursor.pos())
     wid.setNetworkEditor(pane)
     wid.show()
