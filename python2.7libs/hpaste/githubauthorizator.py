@@ -1,3 +1,14 @@
+import os
+import json
+import urllib2
+import base64
+import socket
+import hou
+
+from hcollections.QDoubleInputDialog import QDoubleInputDialog
+from PySide2.QtWidgets import  QMessageBox
+
+
 class GithubAuthorizator(object):
 	defaultdata = {'ver': '1.2', 'collections': [], 'publiccollections': []}
 	defaultentry = {'user': '', 'token': ''}
@@ -13,7 +24,7 @@ class GithubAuthorizator(object):
 		except urllib2.HTTPError as e:
 			code = e.code
 		except urllib2.URLError as e:
-			raise CollectionSyncError('unable to reach github: %s' % e.reason)
+			raise RuntimeError('unable to reach github: %s' % e.reason)
 
 		if (code == -1): code = rep.getcode()
 		return code, rep
@@ -37,23 +48,31 @@ class GithubAuthorizator(object):
 		return data
 
 	@classmethod
-	def newAuthorization(cls,auth=None):
+	def newAuthorization(cls,auth=None,altparent=None):
 		# appends or changes auth in file
 		# auth parameter is used as default data when promped user, contents of auth will get replaced if user logins successfully
 		code=0
 		if(auth is None):
-			auth=dict(GithubAuthorizator.defaultentry) # copy
+			auth=dict(GithubAuthorizator.defaultentry) # copy #TODO: this fucksup the question purpose at 74 FIXXXX!!!!
 
 		data=cls.readAuthorizationsFile()
 		newauth={}
 
 		while True:
-			btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'), initial_contents=(auth['user'],))
+			if(hou.isUIAvailable()):
+				btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'), initial_contents=(auth['user'],))
+			else:
+				username, password, btn = QDoubleInputDialog.getUserPassword(altparent,'authorization','github authorization required. code %d'%code,'username','password')
+				btn=1-btn
 			if(btn!=0):
 				if(auth is None):
 					return False
 				else:
-					btn=hou.ui.displayMessage('Do you want to remove account %s from remembered?'%auth['user'], buttons=('Yes','No'), close_choice=1)
+					if(hou.isUIAvailable()):
+						btn=hou.ui.displayMessage('Do you want to remove account %s from remembered?'%auth['user'], buttons=('Yes','No'), close_choice=1)
+					else:
+						btn = QMessageBox.question(altparent,'question','Do you want to remove account %s from remembered?'%auth['user'])
+						btn = btn==QMessageBox.No
 					if(btn==1):return False
 					oldones = [x for x in data['collections'] if x['user'] == auth['user']]
 					for old in oldones: data['collections'].remove(old)
@@ -61,7 +80,10 @@ class GithubAuthorizator(object):
 						with open(cls.defaultfilename, 'w') as f:
 							json.dump(data, f, indent=4)
 					except:
-						hou.ui.displayMessage("writing token to file failed!")
+						if (hou.isUIAvailable()):
+							hou.ui.displayMessage("writing token to file failed!")
+						else:
+							QMessageBox.warning(altparent,'error',"writing token to file failed!")
 					return False
 
 
@@ -84,17 +106,26 @@ class GithubAuthorizator(object):
 						with open(cls.defaultfilename,'w') as f:
 							json.dump(data, f, indent=4)
 					except:
-						hou.ui.displayMessage("writing token to file failed!")
+						if (hou.isUIAvailable()):
+							hou.ui.displayMessage("writing token to file failed!")
+						else:
+							QMessageBox.warning(altparent,'error', "writing token to file failed!")
 					return True
 				elif(code == 422):
 					#postdata was not accepted
 					#so we just make another attempt of creating a token (github requires unique note)
 					pass
 				elif(code == 401):
-					hou.ui.displayMessage('wrong username or password')
+					if (hou.isUIAvailable()):
+						hou.ui.displayMessage('wrong username or password')
+					else:
+						QMessageBox.warning(altparent,'error', 'wrong username or password')
 					break
 
-			hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+			if (hou.isUIAvailable()):
+				hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+			else:
+				QMessageBox.warning(altparent, 'error', 'could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
 			return False
 
 	@classmethod
