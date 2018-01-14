@@ -46,6 +46,9 @@ class CollectionItem(object):
 		self._readonly=readonly
 		self._meta=metadata		#Metadata
 		self.__valid=True
+
+		self.__cache=None
+		self.__cacheNeedsUpdate=True
 		#wid is not stored cuz it may be generated dynamically
 
 	def name(self):
@@ -78,7 +81,10 @@ class CollectionItem(object):
 
 	def content(self):
 		if (not self.__valid): raise CollectionItemInvalidError()
-		return self._collection.getContent(self)
+		if(self.__cacheNeedsUpdate):
+			self.__cache=self._collection.getContent(self)
+			self.__cacheNeedsUpdate=False
+		return self.__cache
 
 	def setName(self,newname):
 		if (not self.__valid): raise CollectionItemInvalidError()
@@ -89,6 +95,7 @@ class CollectionItem(object):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, newContent=newcontent)
+		self.__cacheNeedsUpdate=True
 
 	def setDescription(self,newdescription):
 		if (not self.__valid): raise CollectionItemInvalidError()
@@ -111,6 +118,10 @@ class CollectionItem(object):
 
 	def _invalidate(self):
 		self.__valid=False
+
+	def dirtyContentCache(self):
+		self.__cache=None
+		self.__cacheNeedsUpdate=True
 
 class CollectionBase(object):
 	def __init__(self):
