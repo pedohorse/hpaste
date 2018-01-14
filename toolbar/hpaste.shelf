@@ -11,6 +11,7 @@
     <memberTool name="hcopyweb"/>
     <memberTool name="hpasteweb"/>
     <memberTool name="hpastecollection"/>
+    <memberTool name="hpastecollectionauth"/>
   </toolshelf>
 
   <tool name="hcopy" label="HCopy" icon="copy.svg">

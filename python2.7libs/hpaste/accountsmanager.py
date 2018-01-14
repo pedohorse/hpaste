@@ -17,33 +17,79 @@ from PySide2.QtCore import *
 import accountsmanager_ui
 from githubauthorizator import GithubAuthorizator
 
-class AccountsManager(QMainWindow):
+class AccountsManager(object):
+	class __AccountsManager(QWidget):
+		def __init__(self, parent, flags=0):
+			super(AccountsManager.__AccountsManager,self).__init__(parent, flags)
+
+			self.ui=accountsmanager_ui.Ui_MainWindow()
+			self.ui.setupUi(self)
+
+			data = GithubAuthorizator.listAuthorizations()
+			self.__authModel=QStringListModel([x['user'] for x in data],self)
+			self.ui.authListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+			self.ui.authListView.setModel(self.__authModel)
+
+			data = GithubAuthorizator.listPublicCollections()
+			self.__publicModel = QStringListModel([x['user'] for x in data], self)
+			self.ui.publicListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
+			self.ui.publicListView.setModel(self.__publicModel)
+
+			#slots-signals
+			self.ui.addAuthPushButton.clicked.connect(self.newAuth)
+			self.ui.removeAuthPushButton.clicked.connect(self.removeAuth)
+			self.ui.addPublicPushButton.clicked.connect(self.newPublic)
+			self.ui.removePublicPushButton.clicked.connect(self.removePublic)
+			self.ui.reinitPushButton.clicked.connect(self.reinitCallback)
+
+
+		def newAuth(self):
+			good = GithubAuthorizator.newAuthorization()
+			if(good):
+				self.updateAuthList()
+
+		def removeAuth(self):
+			index = self.ui.authListView.currentIndex()
+			good = GithubAuthorizator.removeAuthorization(index.data())
+			if(good):
+				self.updateAuthList()
+
+		def newPublic(self):
+			good = GithubAuthorizator.newPublicCollection()
+			if (good):
+				self.updatePublicList()
+
+		def removePublic(self):
+			index = self.ui.publicListView.currentIndex()
+			good = GithubAuthorizator.removePublicCollection(index.data())
+			if (good):
+				self.updatePublicList()
+
+		def updateAuthList(self):
+			data = GithubAuthorizator.listAuthorizations()
+			self.__authModel.setStringList([x['user'] for x in data])
+
+		def updatePublicList(self):
+			data = GithubAuthorizator.listPublicCollections()
+			self.__publicModel.setStringList([x['user'] for x in data])
+
+		def reinitCallback(self):
+			try:
+				import hpastecollectionwidget
+				hpastecollectionwidget.HPasteCollectionWidget._killInstance()
+			except:
+				pass
+
+	__instance=None
+
 	def __init__(self,parent):
-		super(AccountsManager,self).__init__(parent)
+		if(AccountsManager.__instance is None):
+			AccountsManager.__instance=AccountsManager.__AccountsManager(parent,Qt.Window)
+		else:
+			AccountsManager.__instance.setParent(parent)
 
-		self.ui=accountsmanager_ui.Ui_MainWindow()
-		self.ui.setupUi(self)
-
-		data = GithubAuthorizator.listAuthorizations()
-		self.__authModel=QStringListModel([x['user'] for x in data],self)
-		self.ui.authListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
-		self.ui.authListView.setModel(self.__authModel)
-
-		data = GithubAuthorizator.listPublicCollections()
-		self.__publicModel = QStringListModel([x['user'] for x in data], self)
-		self.ui.publicListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
-		self.ui.publicListView.setModel(self.__publicModel)
-
-		#slots-signals
-		self.ui.addAuthPushButton.clicked.connect(self.newAuth)
-
-
-	def newAuth(self):
-		GithubAuthorizator.newAuthorization()
-		pass
-
-
-
+	def __getattr__(self, item):
+		return getattr(AccountsManager.__instance,item)
 
 if(__name__=='__main__'):
 	import sys
