@@ -10,6 +10,7 @@ from hcollections.collectionbase import CollectionSyncError,CollectionItem
 from hcollections.githubcollection import GithubCollection
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 
+import urllib2 #just for exception catching
 
 #TODO: implement some kind of collection rescan
 
@@ -154,13 +155,25 @@ class HPasteCollectionWidget(object):
 						import random
 						ptkn=random.sample(auths,1)[0]['token']
 					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn))
-				except:
+				except Exception as e:
+					msg=''
+					if(isinstance(e,urllib2.HTTPError)): msg='code %d. %s'%(e.code,e.reason)
+					elif(isinstance(e,urllib2.URLError)): msg=e.reason
+					else: msg=e.message
 					hou.ui.displayMessage('unable to load public collection %s'%col['user'])
-					raise
+
 
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
 			print("reparenting")
 			HPasteCollectionWidget.__instance.setParent(parent)
+
+	@classmethod
+	def _hasInstance(cls):
+		return cls.__instance is not None
+
+	@classmethod
+	def _killInstance(cls): #TODO: TO BE RETHOUGHT LATER !! THIS GUY SHOULD GO AWAY
+		cls.__instance=None
 
 	def __getattr__(self, item):
 		return getattr(HPasteCollectionWidget.__instance,item)
