@@ -20,13 +20,13 @@ def urlopen_nt(req):
 	if (code == -1): code = rep.getcode()
 	return code, rep
 
+
 class InvalidToken(CollectionSyncError):
 	def __init__(self,message):
 		super(InvalidToken,self).__init__(message)
 
+
 class GithubCollection(CollectionBase):
-
-
 	def __init__(self, token_or_username, public=False, token_for_public_access=None):
 		assert isinstance(token_or_username,str) or isinstance(token_or_username,unicode), 'token must be a str'
 
@@ -59,7 +59,6 @@ class GithubCollection(CollectionBase):
 
 		data=json.loads(rep.read())
 		self.__name=data['login']
-
 
 	def list(self):
 		#this should produce list of snippets in the collection
@@ -101,8 +100,6 @@ class GithubCollection(CollectionBase):
 				res.append(newitem)
 
 		return tuple(res)
-
-
 
 	def reinit(self):
 		#this method should completely reread everything
