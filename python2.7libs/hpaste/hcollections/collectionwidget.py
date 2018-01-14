@@ -11,6 +11,7 @@ from QDropdownWidget import QDropdownWidget
 
 import collectionbase
 
+
 class SnippetCollectionModel(QAbstractTableModel):
 	def __init__(self,collectionsList,parent=None,metadataExposedKeys=()):
 		assert isinstance(metadataExposedKeys,list) or isinstance(metadataExposedKeys,tuple), 'metadataExposeKeys should be a collection of string keys'
@@ -108,7 +109,6 @@ class SnippetCollectionModel(QAbstractTableModel):
 				if(key in metadata): return metadata[key]
 				else: return ''
 		return None
-
 
 
 class CollectionWidget(QDropdownWidget):
