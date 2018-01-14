@@ -6,7 +6,7 @@ import socket
 import hou
 
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
-from PySide2.QtWidgets import  QMessageBox
+from PySide2.QtWidgets import  QMessageBox, QInputDialog
 
 
 class GithubAuthorizator(object):
@@ -48,21 +48,39 @@ class GithubAuthorizator(object):
 		return data
 
 	@classmethod
+	def writeAuthorizationFile(cls,data): #TODO: this shiuld signal hpastecollectionwidget that it needs to update
+		#writes the config file
+		#should ensure data is correct
+		#TODO: check the data to be correct
+		filepath = cls.defaultfilename
+		with open(filepath, 'w') as f:
+			json.dump(data, f, indent=4)
+
+
+	@classmethod
 	def newAuthorization(cls,auth=None,altparent=None):
 		# appends or changes auth in file
 		# auth parameter is used as default data when promped user, contents of auth will get replaced if user logins successfully
 		code=0
-		if(auth is None):
-			auth=dict(GithubAuthorizator.defaultentry) # copy #TODO: this fucksup the question purpose at 74 FIXXXX!!!!
 
 		data=cls.readAuthorizationsFile()
 		newauth={}
 
+		if(auth is not None and 'user' in auth and 'token' in auth):
+			#just write to config and get the hell out
+			#or maybe we can test it first...
+			oldones = [x for x in data['collections'] if x['user'] == auth['user']]
+			for old in oldones: data['collections'].remove(old)
+			data['collections'].append(auth)
+			cls.writeAuthorizationFile(data)
+			return True
+
 		while True:
+			defuser = auth['user'] if auth is not None else ''
 			if(hou.isUIAvailable()):
-				btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'), initial_contents=(auth['user'],))
+				btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d'%code, ('username', 'password'), (1,),  buttons=('Ok', 'Cancel'), initial_contents=(defuser,))
 			else:
-				username, password, btn = QDoubleInputDialog.getUserPassword(altparent,'authorization','github authorization required. code %d'%code,'username','password')
+				username, password, btn = QDoubleInputDialog.getUserPassword(altparent,'authorization','github authorization required. code %d'%code,'username','password',defuser)
 				btn=1-btn
 			if(btn!=0):
 				if(auth is None):
@@ -77,8 +95,7 @@ class GithubAuthorizator(object):
 					oldones = [x for x in data['collections'] if x['user'] == auth['user']]
 					for old in oldones: data['collections'].remove(old)
 					try:
-						with open(cls.defaultfilename, 'w') as f:
-							json.dump(data, f, indent=4)
+						cls.writeAuthorizationFile(data)
 					except:
 						if (hou.isUIAvailable()):
 							hou.ui.displayMessage("writing token to file failed!")
@@ -98,13 +115,13 @@ class GithubAuthorizator(object):
 
 					newauth['token']=repdata['token'] #TODO: check if reply is as expected
 					newauth['user']=username
+					if auth is None: auth={}
 					for key in newauth:auth[key]=newauth[key]
 					oldones=[x for x in data['collections'] if x['user']==username]
 					for old in oldones: data['collections'].remove(old)
 					data['collections'].append(newauth)
 					try:
-						with open(cls.defaultfilename,'w') as f:
-							json.dump(data, f, indent=4)
+						cls.writeAuthorizationFile(data)
 					except:
 						if (hou.isUIAvailable()):
 							hou.ui.displayMessage("writing token to file failed!")
@@ -121,12 +138,47 @@ class GithubAuthorizator(object):
 					else:
 						QMessageBox.warning(altparent,'error', 'wrong username or password')
 					break
-
-			if (hou.isUIAvailable()):
-				hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
 			else:
-				QMessageBox.warning(altparent, 'error', 'could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
-			return False
+				if (hou.isUIAvailable()):
+					hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+				else:
+					QMessageBox.warning(altparent, 'error', 'could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+		return False
+
+	@classmethod
+	def removeAuthorization(cls,username):
+		data=GithubAuthorizator.readAuthorizationsFile()
+		data['collections']=filter(lambda x:x['user']!=username,data['collections'])
+		cls.writeAuthorizationFile(data)
+		return True
+
+	@classmethod
+	def newPublicCollection(cls,username=None, altparent=None):
+		data = GithubAuthorizator.readAuthorizationsFile()
+		if(username is not None):
+			if(isinstance(username,dict)):username=username['user']
+			newitem={'user':username}
+			data['publiccollections'].append(newitem)
+			cls.writeAuthorizationFile(data)
+			return True
+
+		if(hou.isUIAvailable()):
+			btn, username = hou.ui.readInput('public collection name', buttons=('Ok','Cancel'), close_choice=1)
+		else:
+			username, btn = QInputDialog.getText(altparent,'enter name', 'public collection name')
+			btn=1-int(btn)
+		if(btn!=0):return False
+		data['publiccollections'] = filter(lambda x: x['user'] != username, data['publiccollections'])
+		data['publiccollections'].append({'user':username})
+		cls.writeAuthorizationFile(data)
+		return True
+
+	@classmethod
+	def removePublicCollection(cls,username):
+		data = GithubAuthorizator.readAuthorizationsFile()
+		data['publiccollections'] = filter(lambda x: x['user'] != username, data['publiccollections'])
+		cls.writeAuthorizationFile(data)
+		return True
 
 	@classmethod
 	def testAuthorization(cls,auth):
