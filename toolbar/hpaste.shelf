@@ -148,7 +148,7 @@ do(kwargs['pane'])
 ]]></script>
   </tool>
 
-  <tool name="hpastecollection" label="Collection" icon="PLASMA_App">
+  <tool name="hpastecollection" label="Collection" icon="cloud-networking-svgrepo-com">
     <script scriptType="python"><![CDATA[from PySide2.QtGui import QCursor
 from PySide2.QtWidgets import QInputDialog, qApp
 from PySide2.QtCore import Qt
@@ -176,5 +176,16 @@ def do(kwargs):
     wid.show()
     
 do(kwargs)]]></script>
+  </tool>
+
+  <tool name="hpastecollectionauth" label="Collection Authorization" icon="cloud-computing-tools-svgrepo-com">
+    <script scriptType="python"><![CDATA[import hpaste.accountsmanager
+reload(hpaste.accountsmanager)
+from hpaste.accountsmanager import AccountsManager
+
+
+wid=AccountsManager(hou.qt.mainWindow())
+
+wid.show()]]></script>
   </tool>
 </shelfDocument>
