@@ -140,9 +140,9 @@ class GithubAuthorizator(object):
 					break
 			else:
 				if (hou.isUIAvailable()):
-					hou.ui.displayMessage('could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+					hou.ui.displayMessage('Could not receive token from github.\nDid you verify your email address?\nAlso please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
 				else:
-					QMessageBox.warning(altparent, 'error', 'could not receive token from github. please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
+					QMessageBox.warning(altparent, 'error', 'Could not receive token from github.\nDid you verify your email address?\nAlso please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
 		return False
 
 	@classmethod
