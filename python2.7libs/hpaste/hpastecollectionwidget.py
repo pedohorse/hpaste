@@ -79,7 +79,7 @@ class HPasteCollectionWidget(object):
 				#print(hpaste.nodesToString(nodes))
 				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),public, metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
-				QMessageBox.critical(self,'something went wrong!','Network error occured: %s'%e.message)
+				QMessageBox.critical(self,'something went wrong!','Server error occured: %s'%e.message)
 
 		def _changeAccess(self, index):
 			item = index.internalPointer()
@@ -89,6 +89,18 @@ class HPasteCollectionWidget(object):
 			if(newaccess==item.access()):return
 			item.setAccess(newaccess)
 
+		def _replaceContent(self, index):
+			nodes = hou.selectedNodes()
+			if (len(nodes)==0):
+				QMessageBox.warning(self,'cannot replace','selection is empty')
+				return
+			item=index.internalPointer()
+			good = QMessageBox.warning(self,'sure?','confirm that you want to replace the content of selected item "%s". This operation can not be undone.'%item.name() ,QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
+			if(not good):return
+			try:
+				item.setContent(hpaste.nodesToString(nodes))
+			except CollectionSyncError as e:
+				QMessageBox.critical(self,'something went wrong!','Server error occured: %s'%e.message)
 
 		def _itemInfo(self, index):
 			item=index.internalPointer()
@@ -112,7 +124,7 @@ class HPasteCollectionWidget(object):
 			#pass
 
 		def _confirmRemove(self,index):
-			return QMessageBox.warning(self,'sure?','confirm removing the item from collection',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
+			return QMessageBox.warning(self,'sure?','confirm removing the item from collection. This operation can not be undone.',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
 
 
 	__instance=None

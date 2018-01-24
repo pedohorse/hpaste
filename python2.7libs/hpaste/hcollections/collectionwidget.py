@@ -186,7 +186,8 @@ class CollectionWidget(QDropdownWidget):
 			newaction = sidemenu.addAction('change access')
 			newaction.triggered.connect(lambda x=cindex:self._changeAccess(x))
 			newaction = sidemenu.addAction('replace content')
-			newaction.setEnabled(False)
+			newaction.triggered.connect(lambda x=cindex:self._replaceContent(x))
+			#newaction.setEnabled(False)
 			#TODO: automatically enable stuff if subclass overrides item methods!
 			sidemenu.addSeparator()
 			newaction = sidemenu.addAction('remove item')
