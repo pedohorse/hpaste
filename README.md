@@ -9,7 +9,8 @@ Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe eve
 ## installation ##
 ### Super short and simple variant ###
 1. Download the contents of this repository as ZIP
-2. Unzip it into your Houdini user folder, for example, C:\Users\\<**USER>**\Documents\houdini16.5\
+2. Unzip it into your Houdini user folder, something like C:\Users\\<**USER>**\Documents\houdini16.5\
+(you actually don't need to copy the example folder from there)
 3. Enjoy!
 
 ### a bit longer variant ###
@@ -19,7 +20,7 @@ Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe eve
 2. copy contents of **toolbar** folder to your toolbar folder
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\toolbar\
         * hint: create toolbar folder if it doesnt exist 
-3. copy 
+3. copy **.hpaste_githubcollection** into your **user** folder to gain access to a demo public collection straight away
 4. start Houdini !!
 5. locate the HPaste shelf in shelf list
 6. if you want fancy icons for the buttons - copy **config** folder content into your config
