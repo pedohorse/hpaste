@@ -174,24 +174,25 @@ class CollectionWidget(QDropdownWidget):
 				newaction.triggered.connect(lambda x=col: self._addItem(x))
 		menu.addSeparator()
 
-		cindex=self._mapToSource(self.ui.mainView.currentIndex())
-		item=cindex.internalPointer()
-		sidemenu = menu.addMenu('item')
-		newaction = sidemenu.addAction('info')
-		newaction.triggered.connect(lambda x=cindex: self._itemInfo(x))
-		if(not item.readonly()):
-			sidemenu.addSeparator()
-			newaction = sidemenu.addAction('rename')
-			newaction.triggered.connect(lambda x=cindex:self._renameItem(x))
-			newaction = sidemenu.addAction('change access')
-			newaction.triggered.connect(lambda x=cindex:self._changeAccess(x))
-			newaction = sidemenu.addAction('replace content')
-			newaction.triggered.connect(lambda x=cindex:self._replaceContent(x))
-			#newaction.setEnabled(False)
-			#TODO: automatically enable stuff if subclass overrides item methods!
-			sidemenu.addSeparator()
-			newaction = sidemenu.addAction('remove item')
-			newaction.triggered.connect(lambda x=cindex: self.__removeItem(x))
+		if(self.ui.mainView.currentIndex().isValid()):
+			cindex=self._mapToSource(self.ui.mainView.currentIndex())
+			item=cindex.internalPointer()
+			sidemenu = menu.addMenu('item')
+			newaction = sidemenu.addAction('info')
+			newaction.triggered.connect(lambda x=cindex: self._itemInfo(x))
+			if(not item.readonly()):
+				sidemenu.addSeparator()
+				newaction = sidemenu.addAction('rename')
+				newaction.triggered.connect(lambda x=cindex:self._renameItem(x))
+				newaction = sidemenu.addAction('change access')
+				newaction.triggered.connect(lambda x=cindex:self._changeAccess(x))
+				newaction = sidemenu.addAction('replace content')
+				newaction.triggered.connect(lambda x=cindex:self._replaceContent(x))
+				#newaction.setEnabled(False)
+				#TODO: automatically enable stuff if subclass overrides item methods!
+				sidemenu.addSeparator()
+				newaction = sidemenu.addAction('remove item')
+				newaction.triggered.connect(lambda x=cindex: self.__removeItem(x))
 
 
 		menu.popup(self.mapToGlobal(pos))
