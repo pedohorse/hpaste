@@ -53,6 +53,12 @@ class AccountsManager(object):
 			good = GithubAuthorizator.removeAuthorization(index.data())
 			if(good):
 				self.updateAuthList()
+				msg=QMessageBox(self)
+				msg.setWindowTitle('account removed from the list!')
+				msg.setTextFormat(Qt.RichText)
+				msg.setText("But...<br>The access token should be deleted manually from your account.<br>Please visit <a href='https://github.com/settings/tokens'>https://github.com/settings/tokens</a> and delete access tokens you don't use anymore")
+				msg.exec_()
+
 
 		def newPublic(self):
 			good = GithubAuthorizator.newPublicCollection()
