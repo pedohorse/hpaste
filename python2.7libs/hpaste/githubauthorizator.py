@@ -8,6 +8,9 @@ import hou
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 from PySide2.QtWidgets import  QMessageBox, QInputDialog
 
+import random
+import string
+
 
 class GithubAuthorizator(object):
 	defaultdata = {'ver': '1.2', 'collections': [], 'publiccollections': []}
@@ -104,9 +107,9 @@ class GithubAuthorizator(object):
 					return False
 
 
-			for attempt in xrange(10): #really crude way of avoiding conflicts for now
+			for attempt in xrange(4): #really crude way of avoiding conflicts for now
 				headers={'User-Agent': 'HPaste', 'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % (username, password))}
-				postdata={'scopes':['gist'],'note':'HPaste Collection Access at %s %d'%(socket.gethostname(),attempt)}
+				postdata={ 'scopes' : ['gist'], 'note' : 'HPaste Collection Access at %s, %s'%(socket.gethostname(), ''.join(random.choice(string.ascii_letters) for _ in xrange(6))) }
 				req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
 				code, rep = cls.urlopen_nt(req)
 
@@ -148,8 +151,15 @@ class GithubAuthorizator(object):
 	@classmethod
 	def removeAuthorization(cls,username):
 		data=GithubAuthorizator.readAuthorizationsFile()
+		auths=[x for x in data['collections'] if x['user']==username]
+		if(len(auths)==0):return False
+
 		data['collections']=filter(lambda x:x['user']!=username,data['collections'])
 		cls.writeAuthorizationFile(data)
+
+		# TODO: delete the token from github!
+		# The problem is that to access auths we have to use username+password basic auth again...
+
 		return True
 
 	@classmethod
