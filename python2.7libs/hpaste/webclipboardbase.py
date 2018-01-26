@@ -1,4 +1,7 @@
 
+
+#TODO: move this class to hpastewebplugins
+
 class WebClipBoardBase(object):
 
 	@classmethod

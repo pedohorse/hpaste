@@ -1,0 +1,3 @@
+h.pane.wsheet.tool:hpasteweb	HPasteWeb	"Shelf Tool: HPasteWeb"	 Alt+Ctrl+Shift+V
+h.pane.wsheet.tool:hpastecollection	Collection	"Shelf Tool: Collection"	 Shift+Tab
+h.pane.wsheet.tool:hcopyweb	HCopyWeb	"Shelf Tool: HCopyWeb"	 Alt+Ctrl+Shift+C

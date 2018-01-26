@@ -4,24 +4,37 @@ simple plain text snippet exchange for Houdini
 for simple and fast exchange of node packs through any messenger
 
 Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
+**Collections** are now only working with **Qt5** versions of **Houdini 16.0 and 16.5**
 
 ## installation ##
+### Super short and simple variant ###
+1. Download the contents of this repository as ZIP
+2. Unzip it into your Houdini user folder, something like C:\Users\\<**USER>**\Documents\houdini16.5\
+(you actually don't need to copy the example folder from there)
+3. Enjoy!
+
+### a bit longer variant ###
 1. copy **hpaste** folder from python2.7libs to your local script folder
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\python2.7libs\
         * hint: create python2.7libs folder if it doesnt exist 
 2. copy contents of **toolbar** folder to your toolbar folder
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\toolbar\
         * hint: create toolbar folder if it doesnt exist 
-3. start Houdini !!
-4. locate the HPaste shelf in shelf list
-5. if you want fancy icons for the buttons - copy **config** folder content into your config
+3. copy **.hpaste_githubcollection** into your **user** folder to gain access to a demo public collection straight away
+4. start Houdini !!
+5. locate the HPaste shelf in shelf list
+6. if you want fancy icons for the buttons - copy **config** folder content into your config
     * for example: C:\Users\\<**USER>**\Documents\houdini16.0\config\
         * hint: create config folder if it doesnt exist 
         * hint: merge icons folder with yours one if you dont have one yet
-6. if you want - you can assign **hotkeys** to copy-paste commands with: 
-    * right-click on the **tool button** on the **shelf** -> **Edit Tool**, **Hotkeys** tab
-    * set them to something not too common like Ctrl+Alt+Shift+C ,  Ctrl+Alt+Shift+V
-7. and may the force be with you
+7. You can download file **HotkeyOverrides** to your Houdini user folder to automatically set hotkeys to
+      1. Ctrl+Alt+Shift+C for HCopyWeb
+      2. Ctrl+Alt+Shift+V for HPasteWeb
+      3. Shift+Tab for HCollections
+   * if you want - you can assign **hotkeys** to copy-paste and collection commands manually with: 
+      * right-click on the **tool button** on the **shelf** -> **Edit Tool**, **Hotkeys** tab
+   * **Note!** That you **will not** be able to use collections without a **hotkey**, so set it up if you plan to use them
+8. and may the force be with you
 
 ## how to use: ##
 * **to copy:**
@@ -36,12 +49,16 @@ Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe eve
 
 
 ## description ##
-* shelf goes with 4 buttons now: 
+* shelf goes with 6 buttons now: 
     * **hcopy**, **hpaste** to copy-paste direct chunks of code
         * pluses: doesnt require any 3-rd party web resources or watever
         * minuses: code chunk can be pretty huge!
     * **hcopyweb**, **hpasteweb** to copy-paste web ids for the code
         * pluses: links are super small and cozy
         * minuses: this require the code to be stored on 3-rd party web resource, and it can be accessed (pure theoretically) by anyone in the world!
-        
+   * **hpastecollection** - cloud storage for your snippets
+        * require github account
+        * works only from a hotkey in the Network Editor
+   * **hpastecollectionauth** - account manager for hpaste collections
+        * add any number of private and public collections to use
 
