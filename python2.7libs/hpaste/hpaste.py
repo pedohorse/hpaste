@@ -221,7 +221,7 @@ def stringToNodes(s, hou_parent = None, ne = None):
 
 	if(paste_to_cursor):
 		#now collect pasted nodes
-		if (houver1[0] == 16):
+		if (houver1[0] >= 16):
 			newitems = [x for x in hou_parent.allItems() if x not in olditems]
 		else:
 			newitems = [x for x in hou_parent.children() if x not in olditems]
@@ -244,6 +244,8 @@ def stringToNodes(s, hou_parent = None, ne = None):
 		cpos[1]=bbmax[1]
 		offset=ne.cursorPosition()-cpos
 		for item in newitems:
+			if(houver1[0] >= 16 and item.parentNetworkBox() in newitems):
+				continue
 			item.move(offset)
 
 
