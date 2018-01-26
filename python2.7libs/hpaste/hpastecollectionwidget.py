@@ -61,7 +61,10 @@ class HPasteCollectionWidget(object):
 
 		def _addItem(self,collection):
 			#Please, dont throw from here!
-			nodes=hou.selectedNodes()
+			try:
+				nodes = hou.selectedItems()
+			except:
+				nodes = hou.selectedNodes()
 			if(len(nodes)==0):
 				QMessageBox.warning(self,'not created','selection is empty, nothing to add')
 				return
@@ -90,7 +93,10 @@ class HPasteCollectionWidget(object):
 			item.setAccess(newaccess)
 
 		def _replaceContent(self, index):
-			nodes = hou.selectedNodes()
+			try:
+				nodes = hou.selectedItems()
+			except:
+				nodes = hou.selectedNodes()
 			if (len(nodes)==0):
 				QMessageBox.warning(self,'cannot replace','selection is empty')
 				return
