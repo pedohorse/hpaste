@@ -61,7 +61,7 @@ def webUnpack(wid):
 				asciiText=unpacker.webUnpackData(id)
 				break
 			except Exception as e:
-				print("error: %s" % str(e.message))
+				print("error: %s: %s" % (str(type(e)), str(e.message)))
 				print("keep trying...")
 				continue
 		if(asciiText is None):
