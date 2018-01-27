@@ -100,12 +100,13 @@ def nodesToString(nodes):
 				code = f.read()
 		finally:
 			os.close(fd)
-	code = binascii.b2a_qp(code)
+	# THIS WAS IN FORMAT VERSION 1 code = binascii.b2a_qp(code)
+	code = base64.b64encode(code)
 	# pprint(code)
 
 	data = {}
 	data['algtype'] = algtype
-	data['version'] = 1
+	data['version'] = 2
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
@@ -138,7 +139,8 @@ def stringToNodes(s, hou_parent = None, ne = None):
 		raise RuntimeError("input data is either corrupted or just not a nodecode: " + str(e.message))
 
 	# check version
-	if (data['version'] > 1): raise RuntimeError("unsupported version of data format")
+	formatVersion=data['version']
+	if (formatVersion > 2): raise RuntimeError("unsupported version of data format")
 
 	# check accepted algtypes
 	houver1 = hou.applicationVersion()
@@ -175,7 +177,13 @@ def stringToNodes(s, hou_parent = None, ne = None):
 			olditems = hou_parent.children()
 
 	# do the work
-	code = binascii.a2b_qp(code)
+	if(formatVersion == 1):
+		code = binascii.a2b_qp(code)
+	elif(formatVersion >= 2):
+		code = base64.b64decode(code)
+	else:
+		raise RuntimeError("Very unexpected format version in a very inexpected place!")
+
 	if (algtype == 0):
 		# high security risk!!
 		if (hou.isUiAvailable()):
