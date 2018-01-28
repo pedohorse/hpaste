@@ -3,8 +3,8 @@ simple plain text snippet exchange for Houdini
 
 for simple and fast exchange of node packs through any messenger
 
-Works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
-**Collections** are now only working with **Qt5** versions of **Houdini 16.0 and 16.5**
+**Hpaste** works/tested for **Houdini 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
+**HCollections** should work in **Houdini 16.x, 15.5** with both Qt4 and Qt5
 
 ## installation ##
 ### Super short and simple variant ###
