@@ -46,6 +46,18 @@ for simple and fast exchange of node packs through any messenger
     2. copy received text to your system clipboard
     3. in houdini - open the node viewer to the location you want to paste your nodes
     4. press **hpaste/hpasteweb** button (or hotkey) depending on if you are pasting code or web-id
+* **collections:**
+    1. go to **hpaste** shelf tab, notice the last button - **Collection Authorization** - it opens an account manager
+    2. If you want to have your own collection which you can read/write and from which other people can read public snippets - you will have to:
+       1. register at **github.com**
+       2. **confirm your email** after registration
+       3. open **Collection Authorization** and click **add** in the upper part of the opened account manager and enter your credentials
+       4. you will see your account name appears in the upper list of the account manager - this means you are ready to go!
+       5. click **re-initialize collections** to force collections to reread new added accounts
+    3. If you want to use public collections in read only manner - just:
+       1. open **Collection Authorization** and click lower **add** in the opened account manager
+       2. enter a known name of a collection you want to add (check spelling twice!)
+       3. click **re-initialize collections** to force collections to reread new added accounts
 
 
 ## description ##
