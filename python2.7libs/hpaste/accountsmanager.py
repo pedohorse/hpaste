@@ -9,12 +9,19 @@ if(__name__=='__main__'):
 	from hcollections.QDoubleInputDialog import QDoubleInputDialog
 
 
+try:
+	from PySide2.QtWidgets import *
+	from PySide2.QtGui import *
+	from PySide2.QtCore import *
+except:
+	from PySide.QtCore import *
+	from PySide.QtGui import *
 
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
-from PySide2.QtCore import *
+try:
+	import accountsmanager_ui
+except ImportError:
+	import accountsmanager_ui4 as accountsmanager_ui
 
-import accountsmanager_ui
 from githubauthorizator import GithubAuthorizator
 
 class AccountsManager(object):

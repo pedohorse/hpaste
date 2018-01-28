@@ -1,8 +1,11 @@
 import hou
 
-from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
-from PySide2.QtWidgets import QInputDialog,QMessageBox
-
+try:
+	from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
+	from PySide2.QtWidgets import QInputDialog,QMessageBox
+except ImportError:
+	from PySide.QtCore import Slot, QRegExp, Qt
+	from PySide.QtGui import QSortFilterProxyModel, QInputDialog, QMessageBox
 
 import hpaste
 from hcollections.collectionwidget import CollectionWidget
@@ -53,7 +56,10 @@ class HPasteCollectionWidget(object):
 		def doOnAccept(self,item):
 			if(item is None):return
 			try:
-				hou.clearAllSelected()
+				try: #>h16
+					hou.clearAllSelected()
+				except: #<=h15.5
+					hou.node("/obj").setSelected(False,clear_all_selected=True)
 				hpaste.stringToNodes(item.content(),ne=self.__nepane)
 			except Exception as e:
 				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)

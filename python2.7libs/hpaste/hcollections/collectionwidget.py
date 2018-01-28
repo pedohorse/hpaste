@@ -4,9 +4,13 @@ if(__name__=='__main__'):
 
 from logger import defaultLogger as log
 
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+try:
+	from PySide2.QtCore import *
+	from PySide2.QtWidgets import *
+	from PySide2.QtGui import *
+except ImportError:
+	from PySide.QtCore import *
+	from PySide.QtGui import *
 from QDropdownWidget import QDropdownWidget
 
 import collectionbase

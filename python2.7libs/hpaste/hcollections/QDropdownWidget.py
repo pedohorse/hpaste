@@ -4,9 +4,13 @@ if(__name__=='__main__'):
 	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
 	from pprint import pprint
 
-from PySide2.QtCore import *
-from PySide2.QtWidgets import *
-from PySide2.QtGui import *
+try:
+	from PySide2.QtCore import *
+	from PySide2.QtWidgets import *
+	from PySide2.QtGui import *
+except ImportError:
+	from PySide.QtCore import *
+	from PySide.QtGui import *
 
 
 class QAdjustedTableView(QTableView):
@@ -70,7 +74,10 @@ class QDropdownWidget(QWidget):
 		self.ui.mainView.horizontalHeader().hide()
 		self.ui.mainView.verticalHeader().hide()
 
-		self.ui.mainView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+		try: #qt5
+			self.ui.mainView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+		except: #qt4
+			self.ui.mainView.horizontalHeader().setResizeMode(QHeaderView.Stretch)
 
 		self.ui.mainView.setMinimumSize(128, 32)
 		self.setMinimumSize(32, 32)

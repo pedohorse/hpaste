@@ -1,9 +1,15 @@
 if(__name__=='__main__'):
 	import os
 	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
-	from PySide2.QtCore import *
+	try:
+		from PySide2.QtCore import *
+	except ImportError:
+		from PySide.QtCore import *
 
-from PySide2.QtWidgets import *
+try:
+	from PySide2.QtWidgets import *
+except ImportError:
+	from PySide.QtGui import *
 
 
 class QDoubleInputDialog(QDialog):
@@ -30,7 +36,7 @@ class QDoubleInputDialog(QDialog):
 		self.ui_mainLayout.addWidget(self.ui_label2, 2, 0)
 		self.ui_mainLayout.addWidget(self.ui_line1, 1, 1)
 		self.ui_mainLayout.addWidget(self.ui_line2, 2, 1)
-		self.ui_mainLayout.addLayout(self.ui_buttonLayout, 3, 1)
+		self.ui_mainLayout.addLayout(self.ui_buttonLayout, 4, 1)
 
 		#Signals-Slots
 		self.ui_buttonOk.clicked.connect(self.accept)
@@ -78,9 +84,10 @@ class QDoubleInputDialog(QDialog):
 		dialog.ui_line1.setText(defValue1)
 		dialog.ui_line2.setText(defValue2)
 		dialog.ui_checkbox=QCheckBox(label3,dialog)
-		dialog.ui_mainLayout.removeItem(dialog.ui_buttonLayout)
-		dialog.ui_mainLayout.addLayout(dialog.ui_buttonLayout,4,1)
-		dialog.ui_mainLayout.addWidget(dialog.ui_checkbox,3,1)
+		#dialog.ui_mainLayout.removeItem(dialog.ui_buttonLayout)
+		#dialog.ui_mainLayout.addLayout(dialog.ui_buttonLayout,4,1)
+		dialog.ui_mainLayout.addWidget(dialog.ui_checkbox, 3, 1)
+
 		dialog.ui_checkbox.setChecked(defCheckbox)
 
 		res = dialog.exec_()
