@@ -145,7 +145,19 @@ class HPasteCollectionWidget(object):
 			HPasteCollectionWidget.__instance = HPasteCollectionWidget.__HPasteCollectionWidget(parent)
 			try:
 				auths=[]
-				while len(auths)==0:
+
+				if(True):
+					auths = list(GithubAuthorizator.listAuthorizations())
+					# test
+					todel = []
+					for auth in auths:
+						if (not GithubAuthorizator.testAuthorization(auth)):
+							if (not GithubAuthorizator.newAuthorization(auth)):
+								todel.append(auth)
+					for d in todel:
+						auths.remove(d)
+				# For now don't force people to have their own collections
+				while False and len(auths)==0:
 					auths=list(GithubAuthorizator.listAuthorizations())
 					if(len(auths)==0):
 						if(GithubAuthorizator.newAuthorization()):
