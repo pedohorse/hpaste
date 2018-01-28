@@ -72,7 +72,7 @@ class QDropdownWidget(QWidget):
 
 		self.ui.mainView.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-		self.ui.mainView.setMinimumSize(32, 32)
+		self.ui.mainView.setMinimumSize(128, 32)
 		self.setMinimumSize(32, 32)
 
 		self.ui.mainView.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
