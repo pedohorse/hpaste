@@ -6,7 +6,10 @@ import socket
 import hou
 
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
-from PySide2.QtWidgets import  QMessageBox, QInputDialog
+try:
+	from PySide2.QtWidgets import  QMessageBox, QInputDialog
+except ImportError:
+	from PySide.QtGui import QMessageBox, QInputDialog
 
 import random
 import string
