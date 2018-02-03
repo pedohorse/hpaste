@@ -18,7 +18,7 @@ import string
 class GithubAuthorizator(object):
 	defaultdata = {'ver': '1.2', 'collections': [], 'publiccollections': []}
 	defaultentry = {'user': '', 'token': ''}
-	defaultfilename=os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_githubcollection')
+	defaultfilename=os.path.normpath(os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_githubcollection'))
 	#TODO: 2 factor authorization needs to be implemented !!
 
 	@classmethod
