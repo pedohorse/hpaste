@@ -24,6 +24,7 @@ except ImportError:
 
 from githubauthorizator import GithubAuthorizator
 
+
 class AccountsManager(object):
 	class __AccountsManager(QWidget):
 		def __init__(self, parent, flags=0):
@@ -32,13 +33,12 @@ class AccountsManager(object):
 			self.ui=accountsmanager_ui.Ui_MainWindow()
 			self.ui.setupUi(self)
 
-			data = GithubAuthorizator.listAuthorizations()
-			self.__authModel=QStringListModel([x['user'] for x in data],self)
+
+			self.__authModel = QStringListModel(self)
 			self.ui.authListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
 			self.ui.authListView.setModel(self.__authModel)
 
-			data = GithubAuthorizator.listPublicCollections()
-			self.__publicModel = QStringListModel([x['user'] for x in data], self)
+			self.__publicModel = QStringListModel(self)
 			self.ui.publicListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
 			self.ui.publicListView.setModel(self.__publicModel)
 
@@ -49,15 +49,26 @@ class AccountsManager(object):
 			self.ui.removePublicPushButton.clicked.connect(self.removePublic)
 			self.ui.reinitPushButton.clicked.connect(self.reinitCallback)
 
+			self.updateAuthList()
+			self.updatePublicList()
+
 
 		def newAuth(self):
-			good = GithubAuthorizator.newAuthorization()
+			good = False
+			try:
+				good = GithubAuthorizator.newAuthorization()
+			except IOError as e:
+				QMessageBox.warning(self,'could not write the account file!','Error: %d : %s'%e.args)
 			if(good):
 				self.updateAuthList()
 
 		def removeAuth(self):
 			index = self.ui.authListView.currentIndex()
-			good = GithubAuthorizator.removeAuthorization(index.data())
+			good = False
+			try:
+				good = GithubAuthorizator.removeAuthorization(index.data())
+			except IOError as e:
+				QMessageBox.warning(self,'could not write the account file!','Error: %d : %s'%e.args)
 			if(good):
 				self.updateAuthList()
 				msg=QMessageBox(self)
@@ -68,22 +79,36 @@ class AccountsManager(object):
 
 
 		def newPublic(self):
-			good = GithubAuthorizator.newPublicCollection()
+			good = False
+			try:
+				good = GithubAuthorizator.newPublicCollection()
+			except IOError as e:
+				QMessageBox.warning(self,'could not write the account file!','Error: %d : %s'%e.args)
 			if (good):
 				self.updatePublicList()
 
 		def removePublic(self):
 			index = self.ui.publicListView.currentIndex()
-			good = GithubAuthorizator.removePublicCollection(index.data())
+			good = False
+			try:
+				good = GithubAuthorizator.removePublicCollection(index.data())
+			except IOError as e:
+				QMessageBox.warning(self,'could not write the account file!','Error: %d : %s'%e.args)
 			if (good):
 				self.updatePublicList()
 
 		def updateAuthList(self):
-			data = GithubAuthorizator.listAuthorizations()
+			try:
+				data = GithubAuthorizator.listAuthorizations()
+			except IOError as e:
+				QMessageBox.warning(self,'could not read the account file!','Error: %d : %s'%e.args)
 			self.__authModel.setStringList([x['user'] for x in data])
 
 		def updatePublicList(self):
-			data = GithubAuthorizator.listPublicCollections()
+			try:
+				data = GithubAuthorizator.listPublicCollections()
+			except IOError as e:
+				QMessageBox.warning(self,'could not read the account file!','Error: %d : %s'%e.args)
 			self.__publicModel.setStringList([x['user'] for x in data])
 
 		def reinitCallback(self):
@@ -100,6 +125,8 @@ class AccountsManager(object):
 			AccountsManager.__instance=AccountsManager.__AccountsManager(parent,Qt.Window)
 		else:
 			AccountsManager.__instance.setParent(parent)
+			AccountsManager.__instance.updateAuthList()
+			AccountsManager.__instance.updatePublicList()
 
 	def __getattr__(self, item):
 		return getattr(AccountsManager.__instance,item)
