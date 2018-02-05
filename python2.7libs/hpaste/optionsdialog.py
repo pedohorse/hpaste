@@ -4,11 +4,13 @@ if(__name__=='__main__'):
 	os.environ['HOUDINI_USER_PREF_DIR']=r'C:\Users\User\Documents\houdini16.0'
 
 
+qt5 = True
 try:
 	from PySide2.QtWidgets import *
 	from PySide2.QtGui import *
 	from PySide2.QtCore import *
 except:
+	qt5 = False
 	from PySide.QtCore import *
 	from PySide.QtGui import *
 
@@ -30,7 +32,7 @@ class ConnectionCheckerThread(QThread):
 		return self.__result
 
 	def run(self):
-		s=''.join([random.choice(string.ascii_letters) for x in xrange(2**16)])
+		s=''.join([random.choice(string.ascii_letters) for x in xrange(2**15)])
 		try:
 			packer=self.__cls()
 			starttime=time.time()
@@ -69,6 +71,7 @@ class PluginListModel(QAbstractTableModel):
 
 
 	def data(self,index,role=Qt.DisplayRole):
+		if(not index.isValid()):return None
 		checkres = (QColor(0,0,0),'Unknown')
 		if(index.column()==2 and role==Qt.DisplayRole or role==Qt.EditRole or role==Qt.DecorationRole):
 			#we don't really need edit role here, but just to keep things straight, failsafe and readable..
@@ -100,7 +103,10 @@ class PluginListModel(QAbstractTableModel):
 			try:
 				hpasteoptions.setOption('hpasteweb.plugins.%s.speed_class'%className,value)
 
-				self.dataChanged.emit(index,index,[])
+				if(qt5):
+					self.dataChanged.emit(index,index,[])
+				else:
+					self.dataChanged.emit(index, index)
 			except Exception as e:
 				print(e)
 				return False
@@ -122,13 +128,18 @@ class PluginListModel(QAbstractTableModel):
 
 		thread = self._plist[row][1]
 		if(thread is not None):
-			if(not thread.isFinished()):thread.quit() #That would be really strange though
+			#if(not thread.isFinished()):thread.quit() #That would be really strange though
+			thread.wait()
 			thread.deleteLater()
 			self._plist[row][1]=None
 		self._plist[row][2]=(code,etime)
 
+
 		index = self.index(row, 2)
-		self.dataChanged.emit(index,index,[])
+		if(qt5):
+			self.dataChanged.emit(index,index,[])
+		else:
+			self.dataChanged.emit(index, index)
 
 
 class OptionsDialog(object):
@@ -152,7 +163,10 @@ class OptionsDialog(object):
 			self.ui_table.horizontalHeader().resizeSection(0, 42)
 			self.ui_table.horizontalHeader().resizeSection(1, 192)
 			self.ui_table.horizontalHeader().resizeSection(2, 92)
-			self.ui_table.horizontalHeader().setSectionResizeMode(1,QHeaderView.Stretch)
+			if(qt5):
+				self.ui_table.horizontalHeader().setSectionResizeMode(1,QHeaderView.Stretch)
+			else: #qt4
+				self.ui_table.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
 			#self.ui_table.horizontalHeader().setVisible(False)
 			self.ui_table.verticalHeader().setVisible(False)
 
