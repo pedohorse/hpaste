@@ -124,7 +124,7 @@ def nodesToString(nodes):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None):
+def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, save_hda_fallbacks=False):
 	paste_to_cursor=ne is not None
 	if (hou_parent is None):
 		if(ne is None):
@@ -140,7 +140,7 @@ def stringToNodes(s, hou_parent = None, ne = None):
 
 	# check version
 	formatVersion=data['version']
-	if (formatVersion > 2): raise RuntimeError("unsupported version of data format")
+	if (formatVersion > 2): raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
 
 	# check accepted algtypes
 	houver1 = hou.applicationVersion()
@@ -225,7 +225,7 @@ def stringToNodes(s, hou_parent = None, ne = None):
 		finally:
 			os.close(fd)
 	else:
-		raise RuntimeError("algorithm type is not supported")
+		raise RuntimeError("algorithm type is not supported. Try updating hpaste to the latest version")
 
 	if(paste_to_cursor):
 		#now collect pasted nodes
