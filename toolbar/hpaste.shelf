@@ -10,6 +10,7 @@
     <memberTool name="hpaste"/>
     <memberTool name="hcopyweb"/>
     <memberTool name="hpasteweb"/>
+    <memberTool name="hpasteoptions"/>
     <memberTool name="hpastecollection"/>
     <memberTool name="hpastecollectionauth"/>
   </toolshelf>
