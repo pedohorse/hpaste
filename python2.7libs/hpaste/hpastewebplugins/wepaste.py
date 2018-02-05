@@ -5,6 +5,7 @@ import random
 import base64
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 class WePaste(WebClipBoardBase):
 	def __init__(self):
@@ -25,8 +26,8 @@ class WePaste(WebClipBoardBase):
 		return id
 
 	@classmethod
-	def speedClass(self):
-		return 6
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,6)
 
 	@classmethod
 	def maxStringLength(self):

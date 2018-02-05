@@ -2,6 +2,7 @@ import urllib2
 import re
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 
 class IX(WebClipBoardBase):
@@ -9,8 +10,8 @@ class IX(WebClipBoardBase):
 		pass
 
 	@classmethod
-	def speedClass(self):
-		return 4
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,4)
 
 	@classmethod
 	def maxStringLength(self):

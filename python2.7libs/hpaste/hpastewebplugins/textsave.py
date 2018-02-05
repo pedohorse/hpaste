@@ -2,6 +2,7 @@ import urllib2
 import re
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 
 class TextSave(WebClipBoardBase):
@@ -10,8 +11,8 @@ class TextSave(WebClipBoardBase):
 		self.__headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
 
 	@classmethod
-	def speedClass(self):
-		return 5
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,3)
 
 	@classmethod
 	def maxStringLength(self):
