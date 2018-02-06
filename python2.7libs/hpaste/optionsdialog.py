@@ -157,10 +157,11 @@ class OptionsDialog(object):
 			self.__model=PluginListModel(self)
 			self.__proxymodel=QSortFilterProxyModel(self)
 			self.__proxymodel.setSourceModel(self.__model)
+			self.__proxymodel.setDynamicSortFilter(True)
 			self.ui_table.setModel(self.__proxymodel)
 
 			self.__proxymodel.sort(0, Qt.DescendingOrder)
-			self.ui_table.horizontalHeader().resizeSection(0, 42)
+			self.ui_table.horizontalHeader().resizeSection(0, 56)
 			self.ui_table.horizontalHeader().resizeSection(1, 192)
 			self.ui_table.horizontalHeader().resizeSection(2, 92)
 			if(qt5):
