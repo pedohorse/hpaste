@@ -47,7 +47,7 @@ def getChildContext(node,houver):
 	else: raise RuntimeError("unsupported houdini version!")
 
 
-def nodesToString(nodes):
+def nodesToString(nodes, transferAssets=True):
 	'''
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -77,6 +77,7 @@ def nodesToString(nodes):
 	context = getChildContext(parent,houver)
 
 	code = ''
+	hdaCodeList = []
 	if (algtype == 0):
 		# filter to keep only nodes
 		nodes = [x for x in nodes if isinstance(x,hou.Node)]
@@ -87,6 +88,27 @@ def nodesToString(nodes):
 				newcode = re.sub(r'# Code to establish connections for.+\n.+\n', '# filtered lines\n', newcode, 1)
 			code += newcode
 	elif (algtype == 1 or algtype == 2):
+		if(transferAssets): # added in version 2.1
+			# scan for nonstandard asset definitions
+			hfs = os.environ['HFS']
+			for elem in nodes:
+				if (not isinstance(elem, hou.Node)): continue
+				for node in [elem] + list(elem.allSubChildren()):
+					definition = node.type().definition()
+					if (definition is None): continue
+					libpath = definition.libraryFilePath()
+					if (libpath.startswith(hfs)): continue
+					# at this point we've got a non standard asset definition
+					print(libpath)
+					fd, temppath = tempfile.mkstemp()
+					try:
+						definition.copyToHDAFile(temppath)
+						with open(temppath, 'rb') as f:
+							hdacode = f.read()
+						hdaCodeList.append(base64.b64encode(hdacode))
+					finally:
+						os.close(fd)
+
 		# get temp file
 		fd, temppath = tempfile.mkstemp()
 		try:
@@ -107,9 +129,11 @@ def nodesToString(nodes):
 	data = {}
 	data['algtype'] = algtype
 	data['version'] = 2
+	data['version.minor'] = 1
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
+	data['hdaList'] = hdaCodeList
 	data['chsum'] = hashlib.sha1(code).hexdigest()
 	#security entries, for future
 	data['author'] = 'unknown'
@@ -177,6 +201,18 @@ def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, sav
 			olditems = hou_parent.children()
 
 	# do the work
+	for hdacode in data.get('hdaList',[]): # added in version 2.1
+		hdacode = base64.b64decode(hdacode)
+		fd, temppath = tempfile.mkstemp()
+		try:
+			with open(temppath, 'wb') as f:
+				f.write(hdacode)
+			for hdadef in hou.hda.definitionsInFile(temppath):
+				hdadef.copyToHDAFile('Embedded')
+		finally:
+			os.close(fd)
+
+	#now nodes themselves
 	if(formatVersion == 1):
 		code = binascii.a2b_qp(code)
 	elif(formatVersion >= 2):
