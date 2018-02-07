@@ -2,14 +2,15 @@ import urllib2
 import re
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 class DumpText(WebClipBoardBase):
 	def __init__(self):
 		self.__host = r"http://dumptext.com/"
 
 	@classmethod
-	def speedClass(self):
-		return 2
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,2)
 
 	@classmethod
 	def maxStringLength(self):

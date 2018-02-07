@@ -3,6 +3,7 @@ import json
 import re
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 
 class GitHub(WebClipBoardBase):
@@ -11,8 +12,8 @@ class GitHub(WebClipBoardBase):
 		self.__headers = {'User-Agent': 'HPaste'}
 
 	@classmethod
-	def speedClass(self):
-		return 4
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,4)
 
 	@classmethod
 	def maxStringLength(self):

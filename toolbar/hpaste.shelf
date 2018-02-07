@@ -10,6 +10,7 @@
     <memberTool name="hpaste"/>
     <memberTool name="hcopyweb"/>
     <memberTool name="hpasteweb"/>
+    <memberTool name="hpasteoptions"/>
     <memberTool name="hpastecollection"/>
     <memberTool name="hpastecollectionauth"/>
   </toolshelf>
@@ -200,5 +201,18 @@ except:
 wid=AccountsManager(mainwindow)
 
 wid.show()]]></script>
+  </tool>
+
+  <tool name="hpasteoptions" label="HPaste Options" icon="options">
+    <script scriptType="python"><![CDATA[from hpaste.optionsdialog import OptionsDialog
+
+try:
+    parent=hou.qt.mainWindow()
+except:
+    parent=hou.ui.mainQtWindow()
+
+w=OptionsDialog(parent)
+
+w.show()]]></script>
   </tool>
 </shelfDocument>

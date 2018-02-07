@@ -2,6 +2,7 @@ import urllib2
 import re
 
 from ..webclipboardbase import WebClipBoardBase
+from .. import hpasteoptions as opt
 
 
 class Sprunge(WebClipBoardBase):
@@ -9,8 +10,8 @@ class Sprunge(WebClipBoardBase):
 		pass
 
 	@classmethod
-	def speedClass(self):
-		return 5
+	def speedClass(cls):
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,5)
 
 	@classmethod
 	def maxStringLength(self):
