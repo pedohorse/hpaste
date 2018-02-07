@@ -34,10 +34,10 @@ def _readOptionsFile(filename=settings_filename):
 	try:
 		with open(filename, 'r') as f:
 			cached_data = json.load(f)
-	except IOError as e:
-		errno,message = e.args
-		print("Error reading settings file, Error %d: %s"%(errno,message))
-		print("Using default options")
+	except IOError:# as e:
+		#errno,message = e.args
+		#print("Error reading settings file, Error %d: %s"%(errno,message))
+		#print("Using default options")
 		if(cached_data is None):
 			cached_data = default_options
 	return cached_data
