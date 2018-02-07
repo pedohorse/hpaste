@@ -77,7 +77,7 @@ def nodesToString(nodes, transferAssets=True):
 	context = getChildContext(parent,houver)
 
 	code = ''
-	hdaCodeList = []
+	hdaList = []
 	if (algtype == 0):
 		# filter to keep only nodes
 		nodes = [x for x in nodes if isinstance(x,hou.Node)]
@@ -105,7 +105,7 @@ def nodesToString(nodes, transferAssets=True):
 						definition.copyToHDAFile(temppath)
 						with open(temppath, 'rb') as f:
 							hdacode = f.read()
-						hdaCodeList.append(base64.b64encode(hdacode))
+						hdaList.append({'type':node.type().name(), 'category':node.type().category().name(), 'code':base64.b64encode(hdacode)})
 					finally:
 						os.close(fd)
 
@@ -133,7 +133,7 @@ def nodesToString(nodes, transferAssets=True):
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
-	data['hdaList'] = hdaCodeList
+	data['hdaList'] = hdaList
 	data['chsum'] = hashlib.sha1(code).hexdigest()
 	#security entries, for future
 	data['author'] = 'unknown'
@@ -148,7 +148,7 @@ def nodesToString(nodes, transferAssets=True):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, save_hda_fallbacks=False):
+def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = True, force_prefer_hdas = False): #First lets investigate, save_hda_fallbacks=False):
 	paste_to_cursor=ne is not None
 	if (hou_parent is None):
 		if(ne is None):
@@ -201,8 +201,16 @@ def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, sav
 			olditems = hou_parent.children()
 
 	# do the work
-	for hdacode in data.get('hdaList',[]): # added in version 2.1
-		hdacode = base64.b64decode(hdacode)
+	for hdaitem in data.get('hdaList',[]): # added in version 2.1
+		hdacode = base64.b64decode(hdaitem['code'])
+		if (ignore_hdas_if_already_defined):
+			type = hdaitem['type']
+			category = hdaitem['category']
+			nodeType = hou.nodeType(hou.nodeTypeCategories()[category],type)
+			if(nodeType is not None):
+				#well, that's already a bad sign, means it is installed
+				continue
+
 		fd, temppath = tempfile.mkstemp()
 		try:
 			with open(temppath, 'wb') as f:
@@ -211,6 +219,7 @@ def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, sav
 				hdadef.copyToHDAFile('Embedded')
 		finally:
 			os.close(fd)
+		#TODO: implement force_prefer_hdas
 
 	#now nodes themselves
 	if(formatVersion == 1):

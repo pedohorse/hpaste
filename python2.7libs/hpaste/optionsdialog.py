@@ -184,7 +184,7 @@ class OptionsDialog(object):
 			OptionsDialog.__instance=OptionsDialog.__OptionsDialog(parent)
 		else:
 			OptionsDialog.__instance.setParent(parent)
-			OptionsDialog.__instance.reset()
+			OptionsDialog.__instance.reset() #TODO: make a button for it, don't do it every time window opens
 
 	def __getattr__(self, item):
 		return getattr(OptionsDialog.__instance,item)
