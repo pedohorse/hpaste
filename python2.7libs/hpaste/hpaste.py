@@ -99,7 +99,7 @@ def nodesToString(nodes, transferAssets=True):
 					libpath = definition.libraryFilePath()
 					if (libpath.startswith(hfs)): continue
 					# at this point we've got a non standard asset definition
-					print(libpath)
+					#print(libpath)
 					fd, temppath = tempfile.mkstemp()
 					try:
 						definition.copyToHDAFile(temppath)
@@ -203,10 +203,10 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 	# do the work
 	for hdaitem in data.get('hdaList',[]): # added in version 2.1
 		hdacode = base64.b64decode(hdaitem['code'])
+		ntype = hdaitem['type']
+		ncategory = hdaitem['category']
 		if (ignore_hdas_if_already_defined):
-			type = hdaitem['type']
-			category = hdaitem['category']
-			nodeType = hou.nodeType(hou.nodeTypeCategories()[category],type)
+			nodeType = hou.nodeType(hou.nodeTypeCategories()[ncategory],ntype)
 			if(nodeType is not None):
 				#well, that's already a bad sign, means it is installed
 				continue
@@ -217,9 +217,14 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 				f.write(hdacode)
 			for hdadef in hou.hda.definitionsInFile(temppath):
 				hdadef.copyToHDAFile('Embedded')
+				#hdadef.save('Embedded')
 		finally:
 			os.close(fd)
-		#TODO: implement force_prefer_hdas
+
+		if(force_prefer_hdas):
+			embhdas = [x for x in hou.hda.definitionsInFile("Embedded") if (x.nodeType().name() == ntype and x.nodeTypeCategory().name() == ncategory)]
+			if(len(embhdas)==1):
+				embhdas[0].setIsPreferred(True)
 
 	#now nodes themselves
 	if(formatVersion == 1):
