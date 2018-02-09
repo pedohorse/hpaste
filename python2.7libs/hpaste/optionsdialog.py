@@ -204,7 +204,6 @@ class OptionsDialog(object):
 			self.ui_hpastebox_pasteLayout.addWidget(self.ui_forcePreferred)
 
 			self.setStyleSheet("QWidget#MainWindow {\n    background-color : rgb(58,58,58)\n}")
-			self.ui_hpastebox.setStyleSheet("QWidget#hpasteBox {\n    background-color : rgb(58,58,58)\n}")
 
 			self.rereadSettings()
 
