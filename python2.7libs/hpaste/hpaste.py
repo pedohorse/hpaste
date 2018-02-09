@@ -11,6 +11,11 @@ import bz2
 
 import tempfile
 
+opt = None
+try:
+	import hpasteoptions as opt
+except:
+	print("Hpaste: Failed to load options, using defaults")
 # for debug
 from pprint import pprint
 
@@ -47,7 +52,7 @@ def getChildContext(node,houver):
 	else: raise RuntimeError("unsupported houdini version!")
 
 
-def nodesToString(nodes, transferAssets=True):
+def nodesToString(nodes, transfer_assets = None):
 	'''
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -56,6 +61,12 @@ def nodesToString(nodes, transferAssets=True):
 	:param nodes:
 	:return:
 	'''
+
+	if (transfer_assets is None):
+		transfer_assets = True
+		if(opt is not None):
+			transfer_assets = opt.getOption('hpaste.transfer_assets', transfer_assets)
+
 
 	parent = nodes[0].parent()
 	for node in nodes:
@@ -88,7 +99,7 @@ def nodesToString(nodes, transferAssets=True):
 				newcode = re.sub(r'# Code to establish connections for.+\n.+\n', '# filtered lines\n', newcode, 1)
 			code += newcode
 	elif (algtype == 1 or algtype == 2):
-		if(transferAssets): # added in version 2.1
+		if(transfer_assets): # added in version 2.1
 			# scan for nonstandard asset definitions
 			hfs = os.environ['HFS']
 			for elem in nodes:
@@ -148,7 +159,27 @@ def nodesToString(nodes, transferAssets=True):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = True, force_prefer_hdas = False): #First lets investigate, save_hda_fallbacks=False):
+def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None):
+	'''
+	TODO: here to be a docstring
+	:param s:
+	:param hou_parent:
+	:param ne:
+	:param ignore_hdas_if_already_defined:
+	:param force_prefer_hdas:
+	:return:
+	'''
+	if (ignore_hdas_if_already_defined is None):
+		ignore_hdas_if_already_defined = True
+		if(opt is not None):
+			ignore_hdas_if_already_defined = opt.getOption('hpaste.ignore_hdas_if_already_defined', ignore_hdas_if_already_defined)
+
+	if (force_prefer_hdas is None):
+		force_prefer_hdas = False
+		if(opt is not None):
+			force_prefer_hdas = opt.getOption('hpaste.force_prefer_hdas', force_prefer_hdas)
+
+
 	paste_to_cursor=ne is not None
 	if (hou_parent is None):
 		if(ne is None):

@@ -58,7 +58,7 @@ def do():
     s=qt.qApp.clipboard().text()
     
     try:
-        hpaste.stringToNodes(s, ignore_hdas_if_already_defined=opt.getOption('hpaste.ignore_hdas_if_already_defined',True), force_prefer_hdas=opt.getOption('hpaste.force_prefer_hdas',False) )
+        hpaste.stringToNodes(s)
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
