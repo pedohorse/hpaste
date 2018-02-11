@@ -52,6 +52,7 @@ except:
     from PySide import QtGui as qt
 
 import hpaste
+import hpaste.hpasteoptions as opt
 
 def do():
     s=qt.qApp.clipboard().text()

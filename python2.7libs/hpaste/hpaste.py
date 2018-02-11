@@ -11,6 +11,11 @@ import bz2
 
 import tempfile
 
+opt = None
+try:
+	import hpasteoptions as opt
+except:
+	print("Hpaste: Failed to load options, using defaults")
 # for debug
 from pprint import pprint
 
@@ -47,7 +52,7 @@ def getChildContext(node,houver):
 	else: raise RuntimeError("unsupported houdini version!")
 
 
-def nodesToString(nodes):
+def nodesToString(nodes, transfer_assets = None):
 	'''
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -56,6 +61,12 @@ def nodesToString(nodes):
 	:param nodes:
 	:return:
 	'''
+
+	if (transfer_assets is None):
+		transfer_assets = True
+		if(opt is not None):
+			transfer_assets = opt.getOption('hpaste.transfer_assets', transfer_assets)
+
 
 	parent = nodes[0].parent()
 	for node in nodes:
@@ -77,6 +88,7 @@ def nodesToString(nodes):
 	context = getChildContext(parent,houver)
 
 	code = ''
+	hdaList = []
 	if (algtype == 0):
 		# filter to keep only nodes
 		nodes = [x for x in nodes if isinstance(x,hou.Node)]
@@ -87,6 +99,27 @@ def nodesToString(nodes):
 				newcode = re.sub(r'# Code to establish connections for.+\n.+\n', '# filtered lines\n', newcode, 1)
 			code += newcode
 	elif (algtype == 1 or algtype == 2):
+		if(transfer_assets): # added in version 2.1
+			# scan for nonstandard asset definitions
+			hfs = os.environ['HFS']
+			for elem in nodes:
+				if (not isinstance(elem, hou.Node)): continue
+				for node in [elem] + list(elem.allSubChildren()):
+					definition = node.type().definition()
+					if (definition is None): continue
+					libpath = definition.libraryFilePath()
+					if (libpath.startswith(hfs)): continue
+					# at this point we've got a non standard asset definition
+					#print(libpath)
+					fd, temppath = tempfile.mkstemp()
+					try:
+						definition.copyToHDAFile(temppath)
+						with open(temppath, 'rb') as f:
+							hdacode = f.read()
+						hdaList.append({'type':node.type().name(), 'category':node.type().category().name(), 'code':base64.b64encode(hdacode)})
+					finally:
+						os.close(fd)
+
 		# get temp file
 		fd, temppath = tempfile.mkstemp()
 		try:
@@ -107,9 +140,11 @@ def nodesToString(nodes):
 	data = {}
 	data['algtype'] = algtype
 	data['version'] = 2
+	data['version.minor'] = 1
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
+	data['hdaList'] = hdaList
 	data['chsum'] = hashlib.sha1(code).hexdigest()
 	#security entries, for future
 	data['author'] = 'unknown'
@@ -124,7 +159,27 @@ def nodesToString(nodes):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, save_hda_fallbacks=False):
+def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None):
+	'''
+	TODO: here to be a docstring
+	:param s:
+	:param hou_parent:
+	:param ne:
+	:param ignore_hdas_if_already_defined:
+	:param force_prefer_hdas:
+	:return:
+	'''
+	if (ignore_hdas_if_already_defined is None):
+		ignore_hdas_if_already_defined = True
+		if(opt is not None):
+			ignore_hdas_if_already_defined = opt.getOption('hpaste.ignore_hdas_if_already_defined', ignore_hdas_if_already_defined)
+
+	if (force_prefer_hdas is None):
+		force_prefer_hdas = False
+		if(opt is not None):
+			force_prefer_hdas = opt.getOption('hpaste.force_prefer_hdas', force_prefer_hdas)
+
+
 	paste_to_cursor=ne is not None
 	if (hou_parent is None):
 		if(ne is None):
@@ -177,6 +232,32 @@ def stringToNodes(s, hou_parent = None, ne = None): #First lets investigate, sav
 			olditems = hou_parent.children()
 
 	# do the work
+	for hdaitem in data.get('hdaList',[]): # added in version 2.1
+		hdacode = base64.b64decode(hdaitem['code'])
+		ntype = hdaitem['type']
+		ncategory = hdaitem['category']
+		if (ignore_hdas_if_already_defined):
+			nodeType = hou.nodeType(hou.nodeTypeCategories()[ncategory],ntype)
+			if(nodeType is not None):
+				#well, that's already a bad sign, means it is installed
+				continue
+
+		fd, temppath = tempfile.mkstemp()
+		try:
+			with open(temppath, 'wb') as f:
+				f.write(hdacode)
+			for hdadef in hou.hda.definitionsInFile(temppath):
+				hdadef.copyToHDAFile('Embedded')
+				#hdadef.save('Embedded')
+		finally:
+			os.close(fd)
+
+		if(force_prefer_hdas):
+			embhdas = [x for x in hou.hda.definitionsInFile("Embedded") if (x.nodeType().name() == ntype and x.nodeTypeCategory().name() == ncategory)]
+			if(len(embhdas)==1):
+				embhdas[0].setIsPreferred(True)
+
+	#now nodes themselves
 	if(formatVersion == 1):
 		code = binascii.a2b_qp(code)
 	elif(formatVersion >= 2):

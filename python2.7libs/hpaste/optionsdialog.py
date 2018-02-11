@@ -146,7 +146,9 @@ class OptionsDialog(object):
 	class __OptionsDialog(QWidget):
 		def __init__(self, parent=None):
 			super(OptionsDialog.__OptionsDialog,self).__init__(parent, Qt.Window)
-			self.resize(312,512)
+			self.__optionsReread=False
+			self.resize(312,560)
+			self.setObjectName("MainWindow")
 
 			self.ui_layout = QVBoxLayout(self)
 			self.ui_table = QTableView(self)
@@ -171,11 +173,61 @@ class OptionsDialog(object):
 			#self.ui_table.horizontalHeader().setVisible(False)
 			self.ui_table.verticalHeader().setVisible(False)
 
-			self.setStyleSheet("QWidget#MainWindow {\n    background-color : rgb(78,78,78)\n}")
+			self.ui_resetButton = QPushButton("rerun tests", self)
+			self.ui_layout.addWidget(self.ui_resetButton)
+			self.ui_resetButton.clicked.connect(self.reset)
 
+			self.ui_hpastebox=QGroupBox("hpaste options",self)
+			self.ui_hpastebox.setObjectName("hpasteBox")
+			self.ui_hpasteboxLayout=QVBoxLayout(self.ui_hpastebox)
+			self.ui_layout.addWidget(self.ui_hpastebox)
+
+			self.ui_hpastebox_copy = QGroupBox("copy", self)
+			self.ui_hpastebox_copyLayout = QVBoxLayout(self.ui_hpastebox_copy)
+			self.ui_hpasteboxLayout.addWidget(self.ui_hpastebox_copy)
+
+			self.ui_saveHdasToggle=QCheckBox("Save definitions for non-standard assets to snippet",self)
+			self.ui_saveHdasToggle.toggled.connect(self.togglesCallback)
+			self.ui_hpastebox_copyLayout.addWidget(self.ui_saveHdasToggle)
+
+
+			self.ui_hpastebox_paste = QGroupBox("paste", self)
+			self.ui_hpastebox_pasteLayout = QVBoxLayout(self.ui_hpastebox_paste)
+			self.ui_hpasteboxLayout.addWidget(self.ui_hpastebox_paste)
+
+			self.ui_ignoreWhenExists = QCheckBox("Ignore assets in snippets if definition is already installed in session", self)
+			self.ui_ignoreWhenExists.toggled.connect(self.togglesCallback)
+			self.ui_hpastebox_pasteLayout.addWidget(self.ui_ignoreWhenExists)
+
+			self.ui_forcePreferred = QCheckBox("Force definitions in the snippet to be prefered", self)
+			self.ui_forcePreferred.toggled.connect(self.togglesCallback)
+			self.ui_hpastebox_pasteLayout.addWidget(self.ui_forcePreferred)
+
+			self.setStyleSheet("QWidget#MainWindow {\n    background-color : rgb(58,58,58)\n}")
+
+			self.rereadSettings()
+
+		@Slot()
 		def reset(self):
 			self.__model = PluginListModel(self)
 			self.__proxymodel.setSourceModel(self.__model)
+
+		def rereadSettings(self):
+			self.__optionsReread=True
+			try:
+				self.ui_saveHdasToggle.setChecked(hpasteoptions.getOption('hpaste.transfer_assets', True))
+				self.ui_ignoreWhenExists.setChecked(hpasteoptions.getOption('hpaste.ignore_hdas_if_already_defined', True))
+				self.ui_forcePreferred.setChecked(hpasteoptions.getOption('hpaste.force_prefer_hdas', False))
+			finally:
+				self.__optionsReread=False
+
+		@Slot(bool)
+		def togglesCallback(self, state):
+			if(self.__optionsReread):return
+			sender=self.sender()
+			if (sender is self.ui_saveHdasToggle): hpasteoptions.setOption('hpaste.transfer_assets', state)
+			if (sender is self.ui_ignoreWhenExists): hpasteoptions.setOption('hpaste.ignore_hdas_if_already_defined', state)
+			if (sender is self.ui_forcePreferred): hpasteoptions.setOption('hpaste.force_prefer_hdas', state)
 
 	__instance=None
 
@@ -184,7 +236,6 @@ class OptionsDialog(object):
 			OptionsDialog.__instance=OptionsDialog.__OptionsDialog(parent)
 		else:
 			OptionsDialog.__instance.setParent(parent)
-			OptionsDialog.__instance.reset()
 
 	def __getattr__(self, item):
 		return getattr(OptionsDialog.__instance,item)
