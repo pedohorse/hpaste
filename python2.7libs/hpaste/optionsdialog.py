@@ -203,7 +203,27 @@ class OptionsDialog(object):
 			self.ui_forcePreferred.toggled.connect(self.togglesCallback)
 			self.ui_hpastebox_pasteLayout.addWidget(self.ui_forcePreferred)
 
-			self.setStyleSheet("QWidget#MainWindow {\n    background-color : rgb(58,58,58)\n}")
+			stsh = "QWidget#MainWindow {\n	background-color : rgb(58,58,58);\n}\n"
+
+			if (QDir(":/qt-project.org/styles/commonstyle/images/").exists()):
+				stsh += '''
+							QCheckBox::indicator:checked{
+								image: url(:/qt-project.org/styles/commonstyle/images/standardbutton-apply-16.png);
+							}
+							QCheckBox::indicator:unchecked{
+								image: url(:/qt-project.org/styles/commonstyle/images/standardbutton-cancel-16.png);
+							}
+							'''
+			elif (QDir(":/trolltech/styles/commonstyle/images/").exists()):
+				stsh += '''
+							QCheckBox::indicator:checked{
+								image: url(:/trolltech/styles/commonstyle/images/standardbutton-apply-16.png);
+							}
+							QCheckBox::indicator:unchecked{
+								image: url(:/trolltech/styles/commonstyle/images/standardbutton-cancel-16.png);
+							}
+							'''
+			self.setStyleSheet(stsh)
 
 			self.rereadSettings()
 
