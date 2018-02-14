@@ -326,8 +326,8 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 			pos=item.position()
 			cpos+=pos
 			for i in [0,1]:
-				if (pos[i] > bbmax[i]): bbmax[i] = pos[i]
-				if (pos[i] < bbmin[i]): bbmin[i] = pos[i]
+				if (pos[i] > bbmax[i] or cnt==1): bbmax[i] = pos[i]
+				if (pos[i] < bbmin[i] or cnt==1): bbmin[i] = pos[i]
 
 		cpos=cpos/cnt
 		cpos[1]=bbmax[1]
