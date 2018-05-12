@@ -196,7 +196,7 @@ class HPasteCollectionWidget(object):
 					if(isinstance(e,urllib2.HTTPError)): msg='code %d. %s'%(e.code,e.reason)
 					elif(isinstance(e,urllib2.URLError)): msg=e.reason
 					else: msg=e.message
-					hou.ui.displayMessage('unable to load public collection %s'%col['user'])
+					hou.ui.displayMessage('unable to load public collection %s: %s'%(col['user'],msg))
 
 
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):

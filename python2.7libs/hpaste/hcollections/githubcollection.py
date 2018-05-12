@@ -150,8 +150,9 @@ class GithubCollection(CollectionBase):
 			item._access=newitem._access
 			item._readonly=newitem._readonly
 
-			#TODO: if access is changed - we have to destroy this gist and create a new one with proper 'public' key
+			# if access is changed - we have to destroy this gist and create a new one with proper 'public' key
 			# Butt Beware - we need to modify item's contents and return it WITHOUT reassigning the item itself
+			# That's what we are doing here currently
 
 		if('nettype' not in item.metadata()):
 			item._invalidate()

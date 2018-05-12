@@ -38,6 +38,9 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList+=tmplist
 		self.endInsertRows()
 
+	def removeCollection(self,collection_name):
+		pass #TODO: do
+
 	def addItemToCollection(self, collection, desiredName, description, content, public, metadata=None):
 		if(collection not in self.__collections):raise ValueError('collection must belong to the model')
 		access=collectionbase.CollectionItem.AccessType.public if public else collectionbase.CollectionItem.AccessType.private
@@ -47,6 +50,12 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.beginInsertRows(QModelIndex(),nextid,nextid)
 		self.__itemList.append(newitem)
 		self.endInsertRows()
+
+	def removeItem(self,vitem):
+		pass #TODO: do, vitem should be able to be different type of item indication
+		if(isinstance(vitem,QModelIndex)):
+			self.removeRow(vitem.row(),1,QModelIndex())
+
 
 	def removeRows(self,row,count,parent):
 		lastrow=row+count-1
