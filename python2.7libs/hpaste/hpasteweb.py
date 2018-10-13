@@ -1,5 +1,7 @@
 import hpastewebplugins
-import random #to shuffle plugins
+import widcacher
+import random  # to shuffle plugins
+import re  # to cleanup wid
 
 def webPack(asciiText, pluginList = None, maxChunkSize = None):
 	allPackids=[]
@@ -40,10 +42,20 @@ def webPack(asciiText, pluginList = None, maxChunkSize = None):
 
 	return '#'.join(allPackids)
 
-def webUnpack(wid):
+
+def webUnpack(wid, useCached=True, cache=None):
 	#just a bit cleanup the wid first, in case it was copied with extra spaces
-	wid=wid.strip()
+	# strip witespaces, just to be sure
+	wid = wid.strip()
+	# strip comments if there are
+	wid = re.sub(r'^\S+\s+', '', wid)
 	#
+	if useCached:
+		if cache is None:  # default cacher
+			cache = widcacher.WidCacher.globalInstance()
+		if wid in cache:
+			return cache[wid]
+
 	allPackids=wid.split('#')
 	asciiTextParts=[]
 	for awid in allPackids:
@@ -69,4 +81,8 @@ def webUnpack(wid):
 			raise RuntimeError("couldnt web unpack data")
 		asciiTextParts.append(asciiText)
 
-	return ''.join(asciiTextParts)
+	finalText = ''.join(asciiTextParts)
+	if useCached and cache is not None:
+		cache[wid] = finalText
+
+	return finalText
