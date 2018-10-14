@@ -22,7 +22,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 
 		super(SnippetCollectionModel,self).__init__(parent)
 		self.__collections=list(collectionsList)
-		self.__itemList=[]
+		self.__itemList=[]  # This list should be 1-to-1 corresponding to model's rows
 
 		self.__metadataExposedKeys=tuple(metadataExposedKeys)
 
@@ -38,10 +38,45 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList+=tmplist
 		self.endInsertRows()
 
-	def removeCollection(self,collection_name):
-		pass #TODO: do
+
+	def removeCollection(self,collection):
+		"""
+		removes collection from model's collection list
+		:param collection: collection instance or collection name (str)
+		:return:
+		"""
+		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str), 'collection must be a collection, or a string'
+		if isinstance(collection, str):
+			matchcollections = filter(lambda x: x.name()==collection, self.__collections)
+		else:
+			matchcollections = [collection]
+
+		#collect indices to remove (from highest to lowedt i)
+		remids = []
+		for i,item in enumerate(self.__itemList):
+			if(item.collection in matchcollections):
+				remids.insert(0,i)
+
+		for i in remids:
+			self.removeRows(i, 1, QModelIndex(), affectCollections=False)
+
+		for collection in matchcollections:
+			self.__collections.remove(collection)
+
 
 	def addItemToCollection(self, collection, desiredName, description, content, public, metadata=None):
+		"""
+		Adds item to collection added to this model
+		This will safely update model to incorporate item
+		if you update collection independantly from model - the model will have no idea that collection has changed therefore will not be updated
+		:param collection: collection already added to the model
+		:param desiredName: desired name of the new item (real name may be different due to enforced name uniqueness)
+		:param description: description of the item
+		:param content: hpaste content of the item
+		:param public: publicity of the access
+		:param metadata: collection type dependant generic metadata that will be applied to the item
+		:return:
+		"""
 		if(collection not in self.__collections):raise ValueError('collection must belong to the model')
 		access=collectionbase.CollectionItem.AccessType.public if public else collectionbase.CollectionItem.AccessType.private
 		newitem=collection.addItem(desiredName, description, content, access,metadata=metadata)
@@ -57,7 +92,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 			self.removeRow(vitem.row(),1,QModelIndex())
 
 
-	def removeRows(self,row,count,parent):
+	def removeRows(self, row, count, parent, affectCollections=True):
 		lastrow=row+count-1
 		if(parent!=QModelIndex() or count==0 or  lastrow>=self.rowCount(parent)):return False
 
@@ -65,7 +100,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		everythingIsBad=False
 		for i in xrange(count):
 			try:
-				self.__itemList[row+i].removeSelf()
+				if(affectCollections): self.__itemList[row+i].removeSelf()
 			except:
 				everythingIsBad=True
 				break
@@ -132,11 +167,32 @@ class CollectionWidget(QDropdownWidget):
 		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
 
+
 	def rescanCollections(self):
+		"""
+		shortcut to self.model()rescanCollection()
+		:return:
+		"""
 		self.model().rescanCollections()
 
-	def addCollection(self,collection):
+
+	def addCollection(self, collection):
+		"""
+		shortcut to self.model().addCollection()
+		:collection: collection to add
+		:return:
+		"""
 		self.model().addCollection(collection)
+
+
+	def removeCollection(self, collection):
+		"""
+		shortcut to self.model().removeCollection()
+		:collection: collection or collection name to remove
+		:return:
+		"""
+		self.model().removeCollection(collection)
+
 
 	def _addItem(self,collection):
 		log('_addItem should be reimplemented in subclass to do what is needed in any specific situation',3)
