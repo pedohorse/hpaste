@@ -33,8 +33,14 @@ class QAdjustedTableView(QTableView):
 
 ####QT
 	def sizeHint(self):
-		#print("wink %d %d"%(self.verticalHeader().length()+4,self.minimumSize().width()))
-		return QSize(self.minimumSize().width(),self.verticalHeader().length()+4)
+		wgt = 0
+		if self.model():
+			for i in range(self.horizontalHeader().count()):
+				if self.horizontalHeader().isSectionHidden(i): continue
+				wgt += self.sizeHintForColumn(i) + 1 #  CAUTION: there's no confirmation that header logical index corresponds directly to View's columns
+
+		scrbarw = 0 if self.verticalScrollBar().isHidden() else self.verticalScrollBar().sizeHint().width()
+		return QSize(wgt + scrbarw + 8, self.verticalHeader().length() + 4)
 
 
 class QFocusedLineEdit(QLineEdit):
@@ -222,6 +228,15 @@ class QDropdownWidget(QWidget):
 	def showEvent(self,event):
 		self.ui.nameInput.setText('')
 		self.ui.mainView.setCurrentIndex(self.__proxyModel.index(0,0))
+		# screen = QGuiApplication.screenAt(self.pos()) #  proper way, but only available in qt5 and for some reason missing in PySide2
+		screenGeo = QApplication.desktop().screenGeometry(self)
+
+		maxsizeY = screenGeo.height() - self.pos().y()
+		self.setMaximumHeight(max(self.minimumHeight(), maxsizeY))
+		self.ui.mainView.resizeColumnsToContents()
+		self.adjustSize()
+		self.ui.mainView.verticalScrollBar().setValue(0)
+		event.accept()
 
 	def hideEvent(self,event):
 		self.finished.emit()
