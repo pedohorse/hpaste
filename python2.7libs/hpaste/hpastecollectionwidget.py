@@ -141,13 +141,16 @@ class HPasteCollectionWidget(object):
 		# a callback for authoriser
 		def _authCallback(self, callbackinfo):
 			auth, public, action = callbackinfo
-			if action == 0 or (action == 2 and not auth['enabled']):
-				self.removeCollection(auth['user'])
-			elif action == 1 or (action == 2 and auth['enabled']):
-				if public:
-					self.addCollection(GithubCollection(auth['user'], public=True))  # TODO: reuse some token for public access
-				else:
-					self.addCollection(GithubCollection(auth['token']))
+			try:
+				if action == 0 or (action == 2 and not auth['enabled']):
+					self.removeCollection(auth['user'])
+				elif action == 1 or (action == 2 and auth['enabled']):
+					if public:
+						self.addCollection(GithubCollection(auth['user'], public=True))  # TODO: reuse some token for public access
+					else:
+						self.addCollection(GithubCollection(auth['token']))
+			except CollectionSyncError as e:
+				QMessageBox.critical(self, 'something went wrong!', 'could not add/remove collection: %s' % e.message)
 
 
 	__instance=None
