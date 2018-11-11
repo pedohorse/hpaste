@@ -138,6 +138,17 @@ class HPasteCollectionWidget(object):
 		def _confirmRemove(self,index):
 			return QMessageBox.warning(self,'sure?','confirm removing the item from collection. This operation can not be undone.',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
 
+		# a callback for authoriser
+		def _authCallback(self, callbackinfo):
+			auth, public, action = callbackinfo
+			if action == 0 or (action == 2 and not auth['enabled']):
+				self.removeCollection(auth['user'])
+			elif action == 1 or (action == 2 and auth['enabled']):
+				if public:
+					self.addCollection(GithubCollection(auth['user'], public=True))  # TODO: reuse some token for public access
+				else:
+					self.addCollection(GithubCollection(auth['token']))
+
 
 	__instance=None
 	def __init__(self,parent):
@@ -174,16 +185,19 @@ class HPasteCollectionWidget(object):
 						auths.remove(d)
 			except Exception as e:
 				hou.ui.displayMessage('Something went wrong.\n%s'%e.message)
-				self.__instance=None
+				HPasteCollectionWidget.__instance=None
 				raise
 
 			for auth in auths:
-				HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']))
+				if auth['enabled']:
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']))
 
 			#now public collections
 
 			cols=GithubAuthorizator.listPublicCollections()
 			for col in cols:
+				if not col['enabled']:
+					continue
 				try:
 					#TODO: test if collection works
 					ptkn=None
@@ -198,6 +212,8 @@ class HPasteCollectionWidget(object):
 					else: msg=e.message
 					hou.ui.displayMessage('unable to load public collection %s: %s'%(col['user'],msg))
 
+			# set callback
+			GithubAuthorizator.registerCollectionChangedCallback((HPasteCollectionWidget.__instance, HPasteCollectionWidget.__HPasteCollectionWidget._authCallback))
 
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
 			print("reparenting")
@@ -209,6 +225,9 @@ class HPasteCollectionWidget(object):
 
 	@classmethod
 	def _killInstance(cls): #TODO: TO BE RETHOUGHT LATER !! THIS GUY SHOULD GO AWAY
+		# remove callback, it holds a reference to us
+		GithubAuthorizator.unregisterCollectionChangedCallback((cls.__instance, HPasteCollectionWidget.__HPasteCollectionWidget._authCallback))
+		cls.__instance.deleteLater()  # widget has parent, so it won't be deleted unless we explicitly tell it to
 		cls.__instance=None
 
 	def __getattr__(self, item):

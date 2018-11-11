@@ -32,14 +32,14 @@ class GithubCollection(CollectionBase):
 
 		if(public):
 			self.__token = None
-			self.__headers = {'User-Agent': 'HPaste'}
+			self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/vnd.github.v3+json'}
 			if(token_for_public_access is not None):
 				self.__headers['Authorization']='Token %s'%token_for_public_access
 			self.__readonly = True
 			self.__name=token_or_username
 		else:
 			self.__token=str(token_or_username)
-			self.__headers = {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token}
+			self.__headers = {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token, 'Accept': 'application/vnd.github.v3+json'}
 			self.__readonly = False
 
 			#if token is bad - we will be thrown from here with InvalidToken exception

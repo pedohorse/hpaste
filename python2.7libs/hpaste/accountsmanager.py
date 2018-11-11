@@ -8,12 +8,13 @@ if(__name__=='__main__'):
 	#print sys.path
 	from hcollections.QDoubleInputDialog import QDoubleInputDialog
 
-
+qt5 = True
 try:
 	from PySide2.QtWidgets import *
 	from PySide2.QtGui import *
 	from PySide2.QtCore import *
 except:
+	qt5 = False
 	from PySide.QtCore import *
 	from PySide.QtGui import *
 
@@ -25,6 +26,67 @@ except ImportError:
 from githubauthorizator import GithubAuthorizator
 
 
+class QStringCheckboxListModel(QAbstractListModel):
+	def __init__(self, parent=None):
+		super(QStringCheckboxListModel, self).__init__(parent)
+		self.__items = []
+
+
+	def data(self, index, role):
+		if (not index.isValid()): return None
+		if(role == Qt.DisplayRole):
+			return self.__items[index.row()][1]
+		elif(role == Qt.CheckStateRole):
+			return self.__items[index.row()][0]
+		return None
+
+
+	def rowCount(self, index=None):
+		if (index is None): index = QModelIndex()
+		if (index.isValid()): return 0
+		return len(self.__items)
+
+
+	def setData(self, index, value, role):
+		if (not index.isValid()): return False
+		if (role == Qt.CheckStateRole):
+			self.__items[index.row()][0] = value
+			if (qt5):
+				self.dataChanged.emit(index, index, [])
+			else:
+				self.dataChanged.emit(index, index)
+			return True
+		return False
+
+
+	def flags(self, index):
+		return Qt.ItemIsSelectable | Qt.ItemIsUserCheckable | Qt.ItemIsEnabled
+
+
+	def insertRows(self, row, count, parent):
+		if (row < 0): return False
+		self.beginInsertRows(parent, row, row + count - 1)
+		self.__items = self.__items[:row] + [[0,'']]*count + self.__items[row:]
+		self.endInsertRows()
+		return True
+
+
+	def removeRows(self, row, count, parent):
+		if (row < 0 or len(self.__items) < row + count): return False
+		self.beginRemoveRows(parent, row, row + count - 1)
+		self.__items = self.__items[:row] + self.__items[row + count:]
+		self.endRemoveRows()
+		return True
+
+
+	def setItemList(self, items):
+		assert hasattr(items, '__iter__'), "Item list must be iterable"
+
+		self.beginResetModel()
+		self.__items = list(items)
+		self.endResetModel()
+
+
 class AccountsManager(object):
 	class __AccountsManager(QWidget):
 		def __init__(self, parent, flags=0):
@@ -34,11 +96,11 @@ class AccountsManager(object):
 			self.ui.setupUi(self)
 
 
-			self.__authModel = QStringListModel(self)
+			self.__authModel = QStringCheckboxListModel(self)
 			self.ui.authListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
 			self.ui.authListView.setModel(self.__authModel)
 
-			self.__publicModel = QStringListModel(self)
+			self.__publicModel = QStringCheckboxListModel(self)
 			self.ui.publicListView.setEditTriggers(QAbstractItemView.NoEditTriggers)
 			self.ui.publicListView.setModel(self.__publicModel)
 
@@ -47,7 +109,10 @@ class AccountsManager(object):
 			self.ui.removeAuthPushButton.clicked.connect(self.removeAuth)
 			self.ui.addPublicPushButton.clicked.connect(self.newPublic)
 			self.ui.removePublicPushButton.clicked.connect(self.removePublic)
-			self.ui.reinitPushButton.clicked.connect(self.reinitCallback)
+			self.ui.reinitPushButton.clicked.connect(self.reinitButtonClicked)
+
+			self.__authModel.dataChanged.connect(self.authDataChanged)
+			self.__publicModel.dataChanged.connect(self.authDataChanged)
 
 			self.updateAuthList()
 			self.updatePublicList()
@@ -77,7 +142,6 @@ class AccountsManager(object):
 				msg.setText("But...<br>The access token should be deleted manually from your account.<br>Please visit <a href='https://github.com/settings/tokens'>https://github.com/settings/tokens</a> and delete access tokens you don't use anymore")
 				msg.exec_()
 
-
 		def newPublic(self):
 			good = False
 			try:
@@ -102,27 +166,43 @@ class AccountsManager(object):
 				data = GithubAuthorizator.listAuthorizations()
 			except IOError as e:
 				QMessageBox.warning(self,'could not read the account file!','Error: %d : %s'%e.args)
-			self.__authModel.setStringList([x['user'] for x in data])
+			self.__authModel.setItemList([[Qt.Checked if x['enabled'] else Qt.Unchecked, x['user']] for x in data])
 
 		def updatePublicList(self):
 			try:
 				data = GithubAuthorizator.listPublicCollections()
 			except IOError as e:
 				QMessageBox.warning(self,'could not read the account file!','Error: %d : %s'%e.args)
-			self.__publicModel.setStringList([x['user'] for x in data])
+			self.__publicModel.setItemList([[Qt.Checked if x['enabled'] else Qt.Unchecked, x['user']] for x in data])
 
-		def reinitCallback(self):
+		# Slots & Callbacks
+		def reinitButtonClicked(self):
 			try:
 				import hpastecollectionwidget
 				hpastecollectionwidget.HPasteCollectionWidget._killInstance()
 			except:
 				pass
 
+		def authDataChanged(self, indextl, indexbr):
+			# For now process only checked state
+			isauthmodel = indextl.model() == self.__authModel
+			for row in range(indextl.row(), indexbr.row()+1):
+				for col in range(indextl.column(), indexbr.column()+1):
+					index = indextl.sibling(row, col)
+					checked = index.data(Qt.CheckStateRole)
+					name = index.data(Qt.DisplayRole)
+					if isauthmodel:
+						GithubAuthorizator.setAuthorizationEnabled(name, checked)
+					else:
+						GithubAuthorizator.setPublicCollsctionEnabled(name, checked)
+
+
+
 	__instance=None
 
 	def __init__(self,parent):
 		if(AccountsManager.__instance is None):
-			AccountsManager.__instance=AccountsManager.__AccountsManager(parent,Qt.Window)
+			AccountsManager.__instance=AccountsManager.__AccountsManager(parent, Qt.Window)
 		else:
 			AccountsManager.__instance.setParent(parent)
 			AccountsManager.__instance.updateAuthList()

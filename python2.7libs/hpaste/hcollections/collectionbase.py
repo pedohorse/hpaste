@@ -86,6 +86,10 @@ class CollectionItem(object):
 			self.__cacheNeedsUpdate=False
 		return self.__cache
 
+	def collection(self):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		return self._collection
+
 	def setName(self,newname):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		if (self._readonly): raise CollectionItemReadonlyError()

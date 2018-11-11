@@ -45,23 +45,25 @@ class SnippetCollectionModel(QAbstractTableModel):
 		:param collection: collection instance or collection name (str)
 		:return:
 		"""
-		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str), 'collection must be a collection, or a string'
+		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str) or isinstance(collection, unicode), 'collection must be a collection, or a string'
+		if isinstance(collection, unicode):
+			collection=str(collection)
 		if isinstance(collection, str):
 			matchcollections = filter(lambda x: x.name()==collection, self.__collections)
 		else:
 			matchcollections = [collection]
-
 		#collect indices to remove (from highest to lowedt i)
 		remids = []
+
 		for i,item in enumerate(self.__itemList):
-			if(item.collection in matchcollections):
+			if item.collection() in matchcollections:
 				remids.insert(0,i)
 
 		for i in remids:
 			self.removeRows(i, 1, QModelIndex(), affectCollections=False)
 
-		for collection in matchcollections:
-			self.__collections.remove(collection)
+		for mcollection in matchcollections:
+			self.__collections.remove(mcollection)
 
 
 	def addItemToCollection(self, collection, desiredName, description, content, public, metadata=None):
