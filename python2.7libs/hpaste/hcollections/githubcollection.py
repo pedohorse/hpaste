@@ -9,9 +9,11 @@ from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentE
 qtAvailable = False
 try:
 	from PySide2.QtGui import QPixmap
+	from PySide2.QtCore import QBuffer, QByteArray
 	qtAvailable = True
 except ImportError:
 	from PySide.QtGui import QPixmap
+	from PySide2.QtCore import QBuffer, QByteArray
 	qtAvailable = True
 
 
@@ -146,7 +148,7 @@ class GithubCollection(CollectionBase):
 
 						if ':' not in filename: continue
 						icontype, iconname =  filename.split(':', 1)
-						if icontype not in ['XPM']: continue  # supported icon format list
+						if icontype not in ['XPM-simple']: continue  # supported icon format list
 
 						filedata = files[typefilename]
 						url = filedata['raw_url']
@@ -160,7 +162,9 @@ class GithubCollection(CollectionBase):
 								raise CollectionSyncError("unexpected server return level %d" % code)
 							data = rep.read()
 
-						if icontype == 'XPM':
+						if icontype == 'XPM-simple':
+							newitem.metadata()['iconfullname'] = ':'.join((filetype, icontype, iconname))
+							newitem.metadata()['icondata'] = data
 							xpmlines = map(lambda x: x.replace('"', ''), re.findall('"[^"]*"', data))
 							newitem.metadata()['iconpixmap'] = QPixmap(xpmlines)
 
@@ -209,6 +213,18 @@ class GithubCollection(CollectionBase):
 			#raise NotImplementedError('not yet implemented')
 
 			newitem=self.addItem(item.name() if newName is None else newName, item.description() if newDescription is None else newDescription, item.content() if newContent is None else newContent,newAccess, item.metadata())
+			# all auxiliary files MUST BE COPIED before deleting original item
+			# icon:
+			id, filename = newitem.id().split('@', 1)
+			if 'iconpixmap' in item.metadata() and 'iconfullname' in item.metadata() and 'icondata' in item.metadata():
+				data = {'files':{item.metadata()['iconfullname']:{'content':item.metadata()['icondata']}}}
+				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				req.get_method = lambda: 'PATCH'
+				code, rep = urlopen_nt(req)
+				if (code != 200):
+					if (code == 403): raise InvalidToken('github auth failed')
+					raise CollectionSyncError("unexpected server return level %d" % code)
+
 			self.removeItem(copy.copy(item))  # remove the copy cuz item gets invalidated and we dont want that for original item
 			item._name = newitem._name
 			item._desc = newitem._desc
@@ -217,7 +233,7 @@ class GithubCollection(CollectionBase):
 			item._id = newitem._id
 			item._access=newitem._access
 			item._readonly=newitem._readonly
-			# TODO: all auxiliary files MUST BE COPIED !!
+
 
 			# if access is changed - we have to destroy this gist and create a new one with proper 'public' key
 			# Butt Beware - we need to modify item's contents and return it WITHOUT reassigning the item itself
