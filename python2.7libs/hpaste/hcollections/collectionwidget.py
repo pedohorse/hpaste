@@ -15,6 +15,22 @@ from QDropdownWidget import QDropdownWidget
 
 import collectionbase
 
+class CollectionListerThread(QThread):
+	workdone = Signal(tuple)
+	workerror = Signal(tuple)
+	def __init__(self, collection, parent=None):
+		assert isinstance(collection, collectionbase.CollectionBase), 'collection must be a collection'
+		super(CollectionListerThread, self).__init__(parent)
+		self.__collection = collection
+
+	def run(self):
+		try:
+			tmplist = self.__collection.list()
+		except Exception as e:
+			self.workerror.emit((self.__collection, "Error listing the collection: %s" % e.message))
+			return
+		self.workdone.emit((self.__collection, tmplist))
+
 
 class SnippetCollectionModel(QAbstractTableModel):
 	def __init__(self,collectionsList,parent=None,metadataExposedKeys=()):
@@ -25,11 +41,13 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList=[]  # This list should be 1-to-1 corresponding to model's rows
 
 		self.__metadataExposedKeys=tuple(metadataExposedKeys)
+		self.__asyncProcessedCollections = {}  # a dict of collection:thread that is being calculated currently async
 
 		self.rescanCollections()
 
 	def addCollection(self,collection):
 		assert isinstance(collection,collectionbase.CollectionBase),'collection must be a collection'
+		if collection in self.__collections: return
 		self.__collections.append(collection)
 		tmplist=collection.list()
 		if(len(tmplist)==0):return
@@ -38,6 +56,55 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__itemList+=tmplist
 		self.endInsertRows()
 
+	def addCollectionAsync(self, collection):
+		assert isinstance(collection, collectionbase.CollectionBase), 'collection must be a collection'
+
+		thread = CollectionListerThread(collection, self)
+		self.__asyncProcessedCollections[collection] = thread
+		thread.workdone.connect(self.__addCollectionAsync_finish)
+		thread.workerror.connect(self.__addCollectionAsync_error)
+		thread.start()
+
+
+	@Slot(tuple)
+	def __addCollectionAsync_finish(self, threaddata):
+		"""
+		This should only be called by thread finish signal
+		:param collist: (collection, list/tuple of collection items)
+		:return:
+		"""
+		print "POPOPOPOPO"
+		collection, itemlist = threaddata
+
+		self.__asyncProcessedCollections[collection].wait()
+		self.__asyncProcessedCollections[collection].deleteLater()  # delete the fetch thread
+		del self.__asyncProcessedCollections[collection]  # delete from pending list
+
+		print threaddata
+		
+		assert isinstance(itemlist, list) or isinstance(itemlist, tuple), 'itemlist argument must be a list'
+		self.__collections.append(collection)
+		if len(itemlist) == 0: return
+		nextid = len(self.__itemList)
+		self.beginInsertRows(QModelIndex(), nextid, nextid + len(itemlist) - 1)
+		self.__itemList += itemlist
+		self.endInsertRows()
+
+	@Slot(tuple)
+	def __addCollectionAsync_error(self, threaddata):
+		"""
+		This should only be called by thread error signal
+		:param threaddata: (collection, string error message)
+		:return:
+		"""
+		print "FAFAFAFAFAFA"
+		collection, errormessage = threaddata
+
+		self.__asyncProcessedCollections[collection].wait()
+		self.__asyncProcessedCollections[collection].deleteLater()  # delete the fetch thread
+		del self.__asyncProcessedCollections[collection]  # delete from pending list
+
+		QMessageBox.critical(self, "Collection %s failed to load: %s" % (collection.name()), errormessage)
 
 	def removeCollection(self,collection):
 		"""
@@ -45,6 +112,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		:param collection: collection instance or collection name (str)
 		:return:
 		"""
+		# TODO: check pending collections too!
 		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str) or isinstance(collection, unicode), 'collection must be a collection, or a string'
 		if isinstance(collection, unicode):
 			collection=str(collection)
@@ -183,13 +251,16 @@ class CollectionWidget(QDropdownWidget):
 		self.model().rescanCollections()
 
 
-	def addCollection(self, collection):
+	def addCollection(self, collection, async=False):
 		"""
 		shortcut to self.model().addCollection()
 		:collection: collection to add
 		:return:
 		"""
-		self.model().addCollection(collection)
+		if async:
+			self.model().addCollectionAsync(collection)
+		else:
+			self.model().addCollection(collection)
 
 
 	def removeCollection(self, collection):

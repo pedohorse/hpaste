@@ -193,7 +193,7 @@ class HPasteCollectionWidget(object):
 
 			for auth in auths:
 				if auth['enabled']:
-					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']))
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']), async=True)
 
 			#now public collections
 
@@ -207,7 +207,7 @@ class HPasteCollectionWidget(object):
 					if(len(auths)>0):
 						import random
 						ptkn=random.sample(auths,1)[0]['token']
-					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn))
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn), async=True)
 				except Exception as e:
 					msg=''
 					if(isinstance(e,urllib2.HTTPError)): msg='code %d. %s'%(e.code,e.reason)
