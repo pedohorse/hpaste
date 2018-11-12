@@ -146,18 +146,24 @@ class SnippetCollectionModel(QAbstractTableModel):
 		return self.createIndex(row,col,self.__itemList[row])
 
 	def data(self,index, role = Qt.DisplayRole):
-		if(role==Qt.DisplayRole):
-			if(index.column() == 0):
+		if role == Qt.DisplayRole:
+			if index.column() == 0:
 				return self.__itemList[index.row()].name()
-			elif(index.column() == 1):
+			elif index.column() == 1:
 				return self.__itemList[index.row()].description()
-			elif(index.column() == 2):
+			elif index.column() == 2:
 				return self.__itemList[index.row()].id()
 			else:
 				metadata=self.__itemList[index.row()].metadata()
 				key=self.__metadataExposedKeys[index.column()-3]
 				if(key in metadata): return metadata[key]
 				else: return ''
+		elif role == Qt.DecorationRole and 'iconpixmap' in self.__itemList[index.row()].metadata():
+			print "Foo"
+			pixmap = self.__itemList[index.row()].metadata()['iconpixmap']
+			print pixmap
+			return pixmap
+
 		return None
 
 
