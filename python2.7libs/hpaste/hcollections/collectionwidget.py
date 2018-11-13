@@ -277,6 +277,21 @@ class SnippetCollectionModel(QAbstractTableModel):
 			return pixmap
 		return None
 
+class ScalingImageStyledItemDelegate(QStyledItemDelegate):
+	def initStyleOption(self, option, index):
+		super(ScalingImageStyledItemDelegate, self).initStyleOption(option, index)
+		option.features &= ~0x10
+
+	def paint(self, painter, option, index):
+		pixmap = index.data(Qt.DecorationRole)
+		if pixmap is not None:
+			msize = min(option.rect.height(), option.rect.width())
+			imgrect = QRect(option.rect.topLeft(), QSize(msize, msize))
+			painter.drawPixmap(imgrect, pixmap)
+			option.rect.adjust(msize, 0, 0, 0)
+
+		super(ScalingImageStyledItemDelegate, self).paint(painter, option, index)
+
 
 class CollectionWidget(QDropdownWidget):
 	def __init__(self,parent=None,metadataExposedKeys=()):
@@ -285,6 +300,7 @@ class CollectionWidget(QDropdownWidget):
 
 		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
+		self.ui.mainView.setItemDelegateForColumn(0, ScalingImageStyledItemDelegate(self))
 
 
 	def rescanCollections(self):
