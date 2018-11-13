@@ -3,6 +3,7 @@ import json
 import copy
 
 import re
+import base64
 
 from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
 
@@ -153,7 +154,7 @@ class GithubCollection(CollectionBase):
 
 						if ':' not in filename: continue
 						icontype, iconname =  filename.split(':', 1)
-						if icontype not in ['XPM-simple']: continue  # supported icon format list
+						if icontype not in ['XPM-simple', 'PNG-base64']: continue  # supported icon format list
 
 						filedata = files[typefilename]
 						url = filedata['raw_url']
@@ -172,6 +173,13 @@ class GithubCollection(CollectionBase):
 							newitem.metadata()['icondata'] = data
 							xpmlines = map(lambda x: x.replace('"', ''), re.findall('"[^"]*"', data))
 							newitem.metadata()['iconpixmap'] = QPixmap(xpmlines)
+
+						if icontype == 'PNG-base64':
+							newitem.metadata()['iconfullname'] = ':'.join((filetype, icontype, iconname))
+							newitem.metadata()['icondata'] = data
+							pix = QPixmap()
+							pix.loadFromData(base64.b64decode(data), "PNG")
+							newitem.metadata()['iconpixmap'] = pix
 
 				res.append(newitem)
 
