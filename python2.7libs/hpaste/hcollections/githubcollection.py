@@ -74,10 +74,15 @@ class GithubCollection(CollectionBase):
 			self.__readonly = False
 
 			#if token is bad - we will be thrown from here with InvalidToken exception
-			self.__name='invalid'
-			self._rescanName()
+			self.__name = None
+
 
 	def name(self):
+		try:
+			if self.__name is None:
+				self._rescanName()
+		except CollectionSyncError:
+			return 'INVALID'
 		return self.__name
 
 	def _rescanName(self):
@@ -96,7 +101,7 @@ class GithubCollection(CollectionBase):
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
 		requrl=r'https://api.github.com/gists'
-		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists'%self.__name
+		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists' % self.name()
 		req=urllib2.Request(requrl,headers=self.__headers)
 		code, rep = urlopen_nt(req)
 

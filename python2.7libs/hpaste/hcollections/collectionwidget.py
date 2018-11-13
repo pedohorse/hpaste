@@ -22,14 +22,46 @@ class CollectionListerThread(QThread):
 		assert isinstance(collection, collectionbase.CollectionBase), 'collection must be a collection'
 		super(CollectionListerThread, self).__init__(parent)
 		self.__collection = collection
+		self.__stopMutex = QMutex()
+		self.__skip = False
+		self.__emitted = False
+
+	def stop(self):
+		"""
+		signal thread to ditch it's data
+		:return: wether stop was successful (True), or signal was already emitted (False)
+		"""
+		self.__stopMutex.lock()
+		self.__skip = True
+		self.__stopMutex.unlock()
+		return not self.__emitted
 
 	def run(self):
+		"""
+		worker part. will be executed in a separate thread on thread.start()
+		:return: None
+		"""
 		try:
 			tmplist = self.__collection.list()
 		except Exception as e:
-			self.workerror.emit((self.__collection, "Error listing the collection: %s" % e.message))
+			self.__stopMutex.lock()  # TODO: so much more python-style to wrap this mutex into a with-statement
+			try:
+				if not self.__skip:
+					self.workerror.emit((self.__collection, "Error listing the collection: %s" % e.message))
+					self.__emitted = True
+			except:
+				pass
+			self.__stopMutex.unlock()
 			return
-		self.workdone.emit((self.__collection, tmplist))
+
+		self.__stopMutex.lock()
+		try:
+			if not self.__skip:
+				self.workdone.emit((self.__collection, tmplist))
+				self.__emitted = True
+		except:
+			pass
+		self.__stopMutex.unlock()
 
 
 class SnippetCollectionModel(QAbstractTableModel):
@@ -47,7 +79,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 
 	def addCollection(self,collection):
 		assert isinstance(collection,collectionbase.CollectionBase),'collection must be a collection'
-		if collection in self.__collections: return
+		if collection in self.__collections or collection in self.__asyncProcessedCollections.keys(): return
 		self.__collections.append(collection)
 		tmplist=collection.list()
 		if(len(tmplist)==0):return
@@ -58,11 +90,13 @@ class SnippetCollectionModel(QAbstractTableModel):
 
 	def addCollectionAsync(self, collection):
 		assert isinstance(collection, collectionbase.CollectionBase), 'collection must be a collection'
+		if collection in self.__collections or collection in self.__asyncProcessedCollections.keys(): return
 
 		thread = CollectionListerThread(collection, self)
 		self.__asyncProcessedCollections[collection] = thread
 		thread.workdone.connect(self.__addCollectionAsync_finish)
 		thread.workerror.connect(self.__addCollectionAsync_error)
+		thread.finished.connect(thread.deleteLater)
 		thread.start()
 
 
@@ -73,14 +107,10 @@ class SnippetCollectionModel(QAbstractTableModel):
 		:param collist: (collection, list/tuple of collection items)
 		:return:
 		"""
-		print "POPOPOPOPO"
 		collection, itemlist = threaddata
 
 		self.__asyncProcessedCollections[collection].wait()
-		self.__asyncProcessedCollections[collection].deleteLater()  # delete the fetch thread
 		del self.__asyncProcessedCollections[collection]  # delete from pending list
-
-		print threaddata
 		
 		assert isinstance(itemlist, list) or isinstance(itemlist, tuple), 'itemlist argument must be a list'
 		self.__collections.append(collection)
@@ -97,41 +127,55 @@ class SnippetCollectionModel(QAbstractTableModel):
 		:param threaddata: (collection, string error message)
 		:return:
 		"""
-		print "FAFAFAFAFAFA"
 		collection, errormessage = threaddata
 
 		self.__asyncProcessedCollections[collection].wait()
-		self.__asyncProcessedCollections[collection].deleteLater()  # delete the fetch thread
 		del self.__asyncProcessedCollections[collection]  # delete from pending list
 
-		QMessageBox.critical(self, "Collection %s failed to load: %s" % (collection.name()), errormessage)
+		print("Collection %s failed to load: %s" % (collection.name(), errormessage))
 
 	def removeCollection(self,collection):
 		"""
 		removes collection from model's collection list
 		:param collection: collection instance or collection name (str)
-		:return:
+		:return: True on success, False in case not all matching collections were deleted due to threading issues. in case of big errors - raises
 		"""
 		# TODO: check pending collections too!
 		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str) or isinstance(collection, unicode), 'collection must be a collection, or a string'
 		if isinstance(collection, unicode):
 			collection=str(collection)
 		if isinstance(collection, str):
-			matchcollections = filter(lambda x: x.name()==collection, self.__collections)
+			matchcollections = filter(lambda x: x.name() == collection, self.__collections)
+			matchcollections += filter(lambda x: x.name() == collection, self.__asyncProcessedCollections.keys())
 		else:
-			matchcollections = [collection]
-		#collect indices to remove (from highest to lowedt i)
-		remids = []
+			if collection in self.__collections or collection in self.__asyncProcessedCollections.keys():
+				matchcollections = [collection]
+			else:
+				matchcollections = []
 
-		for i,item in enumerate(self.__itemList):
-			if item.collection() in matchcollections:
-				remids.insert(0,i)
-
-		for i in remids:
-			self.removeRows(i, 1, QModelIndex(), affectCollections=False)
-
+		result = True
 		for mcollection in matchcollections:
-			self.__collections.remove(mcollection)
+			if mcollection in self.__collections:
+				#collect indices to remove (from highest to lowedt i)
+				remids = []
+
+				for i,item in enumerate(self.__itemList):
+					if item.collection() == mcollection:
+						remids.insert(0,i)
+
+				for i in remids:
+					self.removeRows(i, 1, QModelIndex(), affectCollections=False)
+
+				self.__collections.remove(mcollection)
+			else:  # so mcollection is in async ones
+				notemitted = self.__asyncProcessedCollections[mcollection].stop()
+				if notemitted:  # stop successful before signal was emitted
+					# so no signal will be emitted, thread will be deleted on finish, so we just forget about it
+					del self.__asyncProcessedCollections[mcollection]
+				else:  # now this is a tricky one: signal was emitted, so it happened during execution of this function most probably
+					# actually i dunno how to handle this...
+					result = False
+		return result
 
 
 	def addItemToCollection(self, collection, desiredName, description, content, public, metadata=None):
@@ -267,9 +311,9 @@ class CollectionWidget(QDropdownWidget):
 		"""
 		shortcut to self.model().removeCollection()
 		:collection: collection or collection name to remove
-		:return:
+		:return: bool - if collection was removed
 		"""
-		self.model().removeCollection(collection)
+		return self.model().removeCollection(collection)
 
 
 	def _addItem(self,collection):

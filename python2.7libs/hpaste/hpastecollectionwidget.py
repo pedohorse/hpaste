@@ -38,6 +38,8 @@ class HPasteCollectionWidget(object):
 
 			self.accepted.connect(self.doOnAccept)
 
+			self.__insideAuthCallback = False
+
 		def setNetworkEditor(self,pane):
 			if(not isinstance(pane,hou.NetworkEditor)):
 				pane=None
@@ -141,16 +143,28 @@ class HPasteCollectionWidget(object):
 		# a callback for authoriser
 		def _authCallback(self, callbackinfo):
 			auth, public, action = callbackinfo
+
+			if self.__insideAuthCallback: return  # prevent looping
+			self.__insideAuthCallback = True
+
 			try:
 				if action == 0 or (action == 2 and not auth['enabled']):
-					self.removeCollection(auth['user'])
+					good = self.removeCollection(auth['user'])
+					if not good:  # means something went wrong during  removal attempt - probably async collection syncing problem. Try later
+						if public:
+							GithubAuthorizator.setPublicCollsctionEnabled(auth['user'], True)
+						else:
+							GithubAuthorizator.setAuthorizationEnabled(auth['user'], True)
+
 				elif action == 1 or (action == 2 and auth['enabled']):
 					if public:
-						self.addCollection(GithubCollection(auth['user'], public=True))  # TODO: reuse some token for public access
+						self.addCollection(GithubCollection(auth['user'], public=True), async=True)  # TODO: reuse some token for public access
 					else:
-						self.addCollection(GithubCollection(auth['token']))
+						self.addCollection(GithubCollection(auth['token']), async=True)
 			except CollectionSyncError as e:
 				QMessageBox.critical(self, 'something went wrong!', 'could not add/remove collection: %s' % e.message)
+			finally:
+				self.__insideAuthCallback = False
 
 
 	__instance=None
@@ -162,14 +176,14 @@ class HPasteCollectionWidget(object):
 
 				if(True):
 					auths = list(GithubAuthorizator.listAuthorizations())
-					# test
-					todel = []
-					for auth in auths:
-						if (not GithubAuthorizator.testAuthorization(auth)):
-							if (not GithubAuthorizator.newAuthorization(auth)):
-								todel.append(auth)
-					for d in todel:
-						auths.remove(d)
+					## test
+					#todel = []
+					#for auth in auths:
+					#	if (not GithubAuthorizator.testAuthorization(auth)):
+					#		if (not GithubAuthorizator.newAuthorization(auth)):
+					#			todel.append(auth)
+					#for d in todel:
+					#	auths.remove(d)
 				# For now don't force people to have their own collections
 				while False and len(auths)==0:
 					auths=list(GithubAuthorizator.listAuthorizations())
@@ -196,7 +210,6 @@ class HPasteCollectionWidget(object):
 					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']), async=True)
 
 			#now public collections
-
 			cols=GithubAuthorizator.listPublicCollections()
 			for col in cols:
 				if not col['enabled']:
@@ -217,7 +230,6 @@ class HPasteCollectionWidget(object):
 
 			# set callback
 			GithubAuthorizator.registerCollectionChangedCallback((HPasteCollectionWidget.__instance, HPasteCollectionWidget.__HPasteCollectionWidget._authCallback))
-
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
 			print("reparenting")
 			HPasteCollectionWidget.__instance.setParent(parent)
