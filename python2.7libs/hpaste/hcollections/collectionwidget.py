@@ -272,25 +272,35 @@ class SnippetCollectionModel(QAbstractTableModel):
 				key=self.__metadataExposedKeys[index.column()-3]
 				if(key in metadata): return metadata[key]
 				else: return ''
-		elif role == Qt.DecorationRole and 'iconpixmap' in self.__itemList[index.row()].metadata():
+		elif role == Qt.UserRole and 'iconpixmap' in self.__itemList[index.row()].metadata():  # UserRole instead of DecoratorRole cuz of strange QtWarning on Windows at first item show only when trying to prevent default delegate painter from drawint decorator.
 			pixmap = self.__itemList[index.row()].metadata()['iconpixmap']
 			return pixmap
 		return None
 
 class ScalingImageStyledItemDelegate(QStyledItemDelegate):
-	def initStyleOption(self, option, index):
-		super(ScalingImageStyledItemDelegate, self).initStyleOption(option, index)
-		option.features &= ~0x10
+	def sizeHint(self, option, index):
+		size = super(ScalingImageStyledItemDelegate, self).sizeHint(option, index)
+		if index.data(Qt.UserRole) is not None:
+			size += QSize(size.height(), 0)
+		return size
 
 	def paint(self, painter, option, index):
-		pixmap = index.data(Qt.DecorationRole)
-		if pixmap is not None:
+		pixmap = index.data(Qt.UserRole)
+
+		if index.column() == 0 and pixmap is not None:
 			msize = min(option.rect.height(), option.rect.width())
 			imgrect = QRect(option.rect.topLeft(), QSize(msize, msize))
+			
+			oldhints = painter.renderHints()
+			painter.setRenderHints(QPainter.SmoothPixmapTransform)
 			painter.drawPixmap(imgrect, pixmap)
+			painter.setRenderHints(oldhints)
+
 			option.rect.adjust(msize, 0, 0, 0)
 
+
 		super(ScalingImageStyledItemDelegate, self).paint(painter, option, index)
+
 
 
 class CollectionWidget(QDropdownWidget):

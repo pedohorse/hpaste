@@ -7,6 +7,8 @@ import base64
 
 from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
 
+currentVersion = (1, 1)
+
 qtAvailable = False
 try:
 	from PySide2.QtGui import QPixmap
@@ -137,10 +139,21 @@ class GithubCollection(CollectionBase):
 					newitem=CollectionItem(self, filename, desc, '%s@%s'%(gist['id'], filename), retaccess, self.__readonly, metadata={'raw_url':rawurl,'nettype':nettype})
 					res.append(newitem)
 			else:
+				# first of all check version
+				verfiles = [x for x in files if x.startswith("ver:")]
+				if len(verfiles) != 1:
+					print("skipping a broken collection item, id:%s" % gist['id'])
+					continue
+				ver = map(lambda x: int(x), verfiles[0].split(':', 1)[1].split('.'))
+				if ver[0] != currentVersion[0]:
+					print("unsupported collection item version, id:%s" % gist['id'])
+					continue
+
+				# now get the item
 				itemfiles = [x for x in files if x.startswith("item:")]
 				if len(itemfiles) != 1: raise CollectionInconsistentError('could not find unique item data in gist')
 				filedata = files[itemfiles[0]]
-				itemname = itemfiles[0].split(':')[1]
+				itemname = itemfiles[0].split(':', 1)[1]
 				rawurl = filedata['raw_url']
 				retaccess = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
 				newitem = CollectionItem(self, itemname, desc, '%s@%s'%(gist['id'], itemfiles[0]), retaccess, self.__readonly, metadata={'raw_url':rawurl,'nettype':nettype})
@@ -325,7 +338,7 @@ class GithubCollection(CollectionBase):
 		postdata = {'public': access==CollectionItem.AccessType.public, 'description': description}
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files']['item:'+desiredName] = {'content':content}
-		postdata['files']['ver'] = {'content':'1.1'}
+		postdata['files']['ver:%s' % '.'.join(map(lambda x:str(x), currentVersion))] = {'content':'==='}
 
 		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
 		code, rep = urlopen_nt(req)
