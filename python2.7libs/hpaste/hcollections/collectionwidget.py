@@ -290,7 +290,7 @@ class ScalingImageStyledItemDelegate(QStyledItemDelegate):
 		if index.column() == 0 and pixmap is not None:
 			msize = min(option.rect.height(), option.rect.width())
 			imgrect = QRect(option.rect.topLeft(), QSize(msize, msize))
-			
+
 			oldhints = painter.renderHints()
 			painter.setRenderHints(QPainter.SmoothPixmapTransform)
 			painter.drawPixmap(imgrect, pixmap)
@@ -371,6 +371,23 @@ class CollectionWidget(QDropdownWidget):
 		if(self._confirmRemove(index)):
 			self.model().removeRows(index.row(),1,QModelIndex())
 
+	def _itemContextMenu(self, index, sidemenu):
+		item = index.internalPointer()
+		newaction = sidemenu.addAction('info')
+		newaction.triggered.connect(lambda x=index: self._itemInfo(x))
+		if (not item.readonly()):
+			sidemenu.addSeparator()
+			newaction = sidemenu.addAction('rename')
+			newaction.triggered.connect(lambda x=index: self._renameItem(x))
+			newaction = sidemenu.addAction('change access')
+			newaction.triggered.connect(lambda x=index: self._changeAccess(x))
+			newaction = sidemenu.addAction('replace content')
+			newaction.triggered.connect(lambda x=index: self._replaceContent(x))
+			# newaction.setEnabled(False)
+			# TODO: automatically enable stuff if subclass overrides item methods!
+			sidemenu.addSeparator()
+			newaction = sidemenu.addAction('remove item')
+			newaction.triggered.connect(lambda x=index: self.__removeItem(x))
 
 ####Slots
 	@Slot(QPoint)
@@ -393,27 +410,12 @@ class CollectionWidget(QDropdownWidget):
 
 		if(self.ui.mainView.currentIndex().isValid()):
 			cindex=self._mapToSource(self.ui.mainView.currentIndex())
-			item=cindex.internalPointer()
 			sidemenu = menu.addMenu('item')
-			newaction = sidemenu.addAction('info')
-			newaction.triggered.connect(lambda x=cindex: self._itemInfo(x))
-			if(not item.readonly()):
-				sidemenu.addSeparator()
-				newaction = sidemenu.addAction('rename')
-				newaction.triggered.connect(lambda x=cindex:self._renameItem(x))
-				newaction = sidemenu.addAction('change access')
-				newaction.triggered.connect(lambda x=cindex:self._changeAccess(x))
-				newaction = sidemenu.addAction('replace content')
-				newaction.triggered.connect(lambda x=cindex:self._replaceContent(x))
-				#newaction.setEnabled(False)
-				#TODO: automatically enable stuff if subclass overrides item methods!
-				sidemenu.addSeparator()
-				newaction = sidemenu.addAction('remove item')
-				newaction.triggered.connect(lambda x=cindex: self.__removeItem(x))
-
+			self._itemContextMenu(cindex, sidemenu)  # Allow subclasses to override submenu
 
 		menu.popup(self.mapToGlobal(pos))
 		menu.aboutToHide.connect(menu.deleteLater)
+		return menu  # Slot does not need that, but if subclass overrides - it can modify default menu instead of creating one from ground up
 
 ####TESTING
 if(__name__=='__main__'):
