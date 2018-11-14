@@ -227,7 +227,7 @@ class GithubCollection(CollectionBase):
 	def readonly(self):
 		return self.__readonly
 
-	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None):
+	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None, metadataChanges=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 		#newName=str(newName)
 		#newDescription=str(newDescription)
@@ -265,7 +265,7 @@ class GithubCollection(CollectionBase):
 			# Butt Beware - we need to modify item's contents and return it WITHOUT reassigning the item itself
 			# That's what we are doing here currently
 
-			# TODO: do we need to continue at this point? all the fields seem to be changed already
+			return
 
 		if 'nettype' not in item.metadata():
 			item._invalidate()
@@ -322,7 +322,34 @@ class GithubCollection(CollectionBase):
 		item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
 		item._readonly = False
 
+		# metadata changes processing
+		metaspecialkeys = ['raw_url', 'nettype', 'icondata', 'iconfullname', 'iconpixmap']
+		#if 'icondata' in metadataChanges and ('iconfullname' in item.metadata() or 'iconfullname' in metadataChanges):
+			# Shall i implement this case? for when qt is not loaded
+		if 'iconpixmap' in metadataChanges and qtAvailable:
+			pix = metadataChanges['iconpixmap']
+			barr = QByteArray()
+			buff = QBuffer(barr)
+			pix.save(buff, "PNG")
+			imagedata = base64.b64encode(barr.data())
+			buff.deleteLater()
 
+			oldiconname = item.metadata().get('iconfullname', None)
+			newiconname = 'icon:PNG-base64:autoicon'
+
+			data = {'files':{}}
+			if oldiconname is not None and oldiconname != newiconname:
+				data['files'][oldiconname]=None
+
+			data['files'][newiconname]={'content':imagedata}
+			req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
+			req.get_method = lambda: 'PATCH'
+
+
+		for metakey in metadataChanges.keys():
+			# All special cases are taken care of, so now just blind copy all remaining changes
+			if metakey in metaspecialkeys: continue
+			item._meta[metakey] = metadataChanges[metakey]
 
 	def addItem(self,desiredName,description,content, access=CollectionItem.AccessType.private, metadata=None):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'

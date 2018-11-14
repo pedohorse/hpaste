@@ -111,6 +111,11 @@ class CollectionItem(object):
 		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, newAccess=newaccess)
 
+	def setMetadata(self, metadataChanges):
+		if (not self.__valid): raise CollectionItemInvalidError()
+		if (self._readonly): raise CollectionItemReadonlyError()
+		self._collection.changeItem(self, metadataChanges=metadataChanges)
+
 	def removeSelf(self):
 		#WARNING! item will be invalidated if removed!
 		if (not self.__valid): raise CollectionItemInvalidError()
@@ -159,7 +164,7 @@ class CollectionBase(object):
 		#this should bring the raw content of the collection item.
 		raise NotImplementedError('Abstract method')
 
-	def changeItem(self,item,newName=None,newDescription=None,newContent=None,newAccess=None):
+	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None, metadataChanges=None):
 		#change an item
 		raise NotImplementedError('Abstract method')
 

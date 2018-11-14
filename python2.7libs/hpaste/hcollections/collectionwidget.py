@@ -367,6 +367,12 @@ class CollectionWidget(QDropdownWidget):
 		#reimplement this to add smth like confirmation window if needed
 		return True
 
+	def _uploadIcon(self, index):
+		"""
+		:param index:
+		:return:
+		"""
+
 	def __removeItem(self,index):
 		if(self._confirmRemove(index)):
 			self.model().removeRows(index.row(),1,QModelIndex())
@@ -383,6 +389,8 @@ class CollectionWidget(QDropdownWidget):
 			newaction.triggered.connect(lambda x=index: self._changeAccess(x))
 			newaction = sidemenu.addAction('replace content')
 			newaction.triggered.connect(lambda x=index: self._replaceContent(x))
+			newaction = sidemenu.addAction('upload icon')
+			newaction.triggered.connect(lambda x=index: self._uploadIcon(x))
 			# newaction.setEnabled(False)
 			# TODO: automatically enable stuff if subclass overrides item methods!
 			sidemenu.addSeparator()
