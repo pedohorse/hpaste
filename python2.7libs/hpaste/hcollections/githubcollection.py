@@ -136,7 +136,7 @@ class GithubCollection(CollectionBase):
 					filedata=files[filename]
 					rawurl=filedata['raw_url']
 					retaccess = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
-					newitem=CollectionItem(self, filename, desc, '%s@%s'%(gist['id'], filename), retaccess, self.__readonly, metadata={'raw_url':rawurl,'nettype':nettype})
+					newitem=CollectionItem(self, filename, desc, '%s@%s'%(gist['id'], filename), retaccess, self.__readonly, metadata={'raw_url':rawurl, 'nettype':nettype, 'ver':(1, 0)})
 					res.append(newitem)
 			else:
 				# first of all check version
@@ -156,7 +156,7 @@ class GithubCollection(CollectionBase):
 				itemname = itemfiles[0].split(':', 1)[1]
 				rawurl = filedata['raw_url']
 				retaccess = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
-				newitem = CollectionItem(self, itemname, desc, '%s@%s'%(gist['id'], itemfiles[0]), retaccess, self.__readonly, metadata={'raw_url':rawurl,'nettype':nettype})
+				newitem = CollectionItem(self, itemname, desc, '%s@%s'%(gist['id'], itemfiles[0]), retaccess, self.__readonly, metadata={'raw_url':rawurl, 'nettype':nettype, 'ver':ver})
 
 				for typefilename in files:
 					if ':' not in typefilename: continue
@@ -227,6 +227,45 @@ class GithubCollection(CollectionBase):
 	def readonly(self):
 		return self.__readonly
 
+	def updateItemIfNeeded(self, item):
+		ver = tuple(item.metadata().get('ver', (1, 0)))
+		if ver < currentVersion:  # TODO: put it into separate method
+			log("upgrading collection item version to %s" % '.'.join(map(lambda x: str(x), currentVersion)))
+			# if it's bigger but was still loadable - we don't change anything
+			# For now we only know how to update 1.0 to 1.1
+			if currentVersion == (1, 1):  # just in case i up the version and forget to change updater
+				# we know exactly what's missing, so we just fix things, no checkings required
+				id, filename = item.id().split('@', 1)
+				data = {'files': {'ver:%s' % '.'.join(map(lambda x: str(x), currentVersion)): {'content': '==='}}}
+				# ver 1.0 does not have ver: file, so we don't delete anything
+				data['files'][filename] = {'filename': 'item:' + filename}
+
+				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				req.get_method = lambda: 'PATCH'
+				code, rep = urlopen_nt(req)
+				if (code != 200):
+					if (code == 403): raise InvalidToken('github auth failed')
+					raise CollectionSyncError("unexpected server return level %d" % code)
+				gist = json.loads(rep.read())
+
+				itemfileanmes = [x for x in gist['files'].keys() if x.startswith("item:")]
+				if len(itemfileanmes) != 1: raise CollectionInconsistentError('something went wrong during item version update: could not find unique item data in gist')
+				newfilename = itemfileanmes[0]
+				newname = newfilename.split(':', 1)[1]
+				desc = gist['description']
+				nettype = ''
+				if (':' in desc):
+					nettype, desc = desc.split(':', 1)
+				item._desc = desc
+				item._name = newname
+				item._meta['raw_url'] = gist['files'][newfilename]['raw_url']
+				item._meta['nettype'] = nettype
+				item._id = '%s@%s' % (gist['id'], newfilename)
+				item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
+				item._readonly = False
+			else:
+				raise NotImplemented("version upgrade to %s is not implemented!" % '.'.join(map(lambda x: str(x), currentVersion)))
+
 	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None, metadataChanges=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 		#newName=str(newName)
@@ -234,10 +273,13 @@ class GithubCollection(CollectionBase):
 		#newContent=str(newContent)
 		#just in case we have random unicode coming in
 		#TODO: check that item belongs to this collection. just in case
+		#TODO NEXT: update item version if needed on change !!! Before any changes
 		if item.readonly():raise CollectionReadonlyError()
-		if newAccess is not None and newAccess!=item.access():
-			#raise NotImplementedError('not yet implemented')
 
+		# Upgrade version if needed
+		self.updateItemIfNeeded(item)
+
+		if newAccess is not None and newAccess!=item.access():
 			newitem=self.addItem(item.name() if newName is None else newName, item.description() if newDescription is None else newDescription, item.content() if newContent is None else newContent,newAccess, item.metadata())
 			# all auxiliary files MUST BE COPIED before deleting original item
 			# icon:
@@ -268,7 +310,7 @@ class GithubCollection(CollectionBase):
 			return
 
 		if 'nettype' not in item.metadata():
-			item._invalidate()
+			item.invalidate()
 			raise CollectionItemInvalidError('required metadata was not found in the item')
 
 		id, filename = item.id().split('@',1)
@@ -290,66 +332,78 @@ class GithubCollection(CollectionBase):
 			data['description']=':'.join((item.metadata()['nettype'], newDescription))
 			proceed=True
 
-		if (not proceed): return
+		if proceed:
+			req=urllib2.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
+			req.get_method=lambda : 'PATCH'
+			code, rep = urlopen_nt(req)
+			if (code != 200):
+				if (code == 403): raise InvalidToken('github auth failed')
+				raise CollectionSyncError("unexpected server return level %d" % code)
 
-		req=urllib2.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
-		req.get_method=lambda : 'PATCH'
-		code, rep = urlopen_nt(req)
-		if (code != 200):
-			if (code == 403): raise InvalidToken('github auth failed')
-			raise CollectionSyncError("unexpected server return level %d" % code)
-
-		gist=json.loads(rep.read())
-		newfilenames=gist['files'].keys()
-		newfilenames.remove('00_HPASTE_SNIPPET')
-		if(len(newfilenames) == 1):
-			newfilename=newfilenames[0]
-			newname = newfilename
-		else:
-			itemfileanmes = [x for x in newfilenames if x.startswith("item:")]
-			if len(itemfileanmes) != 1: raise CollectionInconsistentError('something went wrong during item creation: could not find unique item data in gist')
-			newfilename = itemfileanmes[0]
-			newname = newfilename.split(':', 1)[1]
-		desc = gist['description']
-		nettype = ''
-		if (':' in desc):
-			nettype, desc = desc.split(':', 1)
-		item._desc = desc
-		item._name = newname
-		item._meta['raw_url'] = gist['files'][newfilename]['raw_url']
-		item._meta['nettype'] = nettype
-		item._id = '%s@%s'%(gist['id'],newfilename)
-		item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
-		item._readonly = False
+			gist=json.loads(rep.read())
+			newfilenames=gist['files'].keys()
+			newfilenames.remove('00_HPASTE_SNIPPET')
+			if(len(newfilenames) == 1):
+				newfilename=newfilenames[0]
+				newname = newfilename
+			else:
+				itemfileanmes = [x for x in newfilenames if x.startswith("item:")]
+				if len(itemfileanmes) != 1: raise CollectionInconsistentError('something went wrong during item creation: could not find unique item data in gist')
+				newfilename = itemfileanmes[0]
+				newname = newfilename.split(':', 1)[1]
+			desc = gist['description']
+			nettype = ''
+			if (':' in desc):
+				nettype, desc = desc.split(':', 1)
+			item._desc = desc
+			item._name = newname
+			item._meta['raw_url'] = gist['files'][newfilename]['raw_url']
+			item._meta['nettype'] = nettype
+			item._id = '%s@%s'%(gist['id'],newfilename)
+			item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
+			item._readonly = False
 
 		# metadata changes processing
-		metaspecialkeys = ['raw_url', 'nettype', 'icondata', 'iconfullname', 'iconpixmap']
-		#if 'icondata' in metadataChanges and ('iconfullname' in item.metadata() or 'iconfullname' in metadataChanges):
-			# Shall i implement this case? for when qt is not loaded
-		if 'iconpixmap' in metadataChanges and qtAvailable:
-			pix = metadataChanges['iconpixmap']
-			barr = QByteArray()
-			buff = QBuffer(barr)
-			pix.save(buff, "PNG")
-			imagedata = base64.b64encode(barr.data())
-			buff.deleteLater()
+		if metadataChanges:
+			metaspecialkeys = ['raw_url', 'nettype', 'icondata', 'iconfullname', 'iconpixmap', 'iconfullname', 'icondata']
+			#if 'icondata' in metadataChanges and ('iconfullname' in item.metadata() or 'iconfullname' in metadataChanges):
+				# Shall i implement this case? for when qt is not loaded
+			if 'iconpixmap' in metadataChanges and qtAvailable:
+				pix = metadataChanges['iconpixmap']
+				barr = QByteArray()
+				buff = QBuffer(barr)
+				pix.save(buff, "PNG")
+				imagedata = base64.b64encode(barr.data())
+				buff.deleteLater()
 
-			oldiconname = item.metadata().get('iconfullname', None)
-			newiconname = 'icon:PNG-base64:autoicon'
+				oldiconname = item.metadata().get('iconfullname', None)
+				newiconname = 'icon:PNG-base64:autoicon'
 
-			data = {'files':{}}
-			if oldiconname is not None and oldiconname != newiconname:
-				data['files'][oldiconname]=None
+				data = {'files':{}}
+				if oldiconname is not None and oldiconname != newiconname:
+					data['files'][oldiconname]=None
 
-			data['files'][newiconname]={'content':imagedata}
-			req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
-			req.get_method = lambda: 'PATCH'
+				data['files'][newiconname]={'content':imagedata}
+				req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
+				req.get_method = lambda: 'PATCH'
+				code, rep = urlopen_nt(req)
+				if (code != 200):
+					if (code == 403): raise InvalidToken('github auth failed')
+					raise CollectionSyncError("unexpected server return level %d" % code)
+				replydict = json.loads(rep.read())
 
+				if newiconname not in replydict['files']:
+					raise CollectionSyncError("icon file was not uploaded properly")
 
-		for metakey in metadataChanges.keys():
-			# All special cases are taken care of, so now just blind copy all remaining changes
-			if metakey in metaspecialkeys: continue
-			item._meta[metakey] = metadataChanges[metakey]
+				globalIconCacher[replydict['files'][newiconname]['raw_url']] = imagedata
+				item._meta['iconfullname'] = newiconname
+				item._meta['icondata'] = imagedata
+				item._meta['iconpixmap'] = pix
+
+			for metakey in metadataChanges.keys():
+				# All special cases are taken care of, so now just blind copy all remaining changes
+				if metakey in metaspecialkeys: continue
+				item._meta[metakey] = metadataChanges[metakey]
 
 	def addItem(self,desiredName,description,content, access=CollectionItem.AccessType.private, metadata=None):
 		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
@@ -409,7 +463,7 @@ class GithubCollection(CollectionBase):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
-		item._invalidate()
+		item.invalidate()
 
 if(__name__=='__main__'):
 	from os import path

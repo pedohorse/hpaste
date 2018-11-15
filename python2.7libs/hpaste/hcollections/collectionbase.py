@@ -111,7 +111,7 @@ class CollectionItem(object):
 		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, newAccess=newaccess)
 
-	def setMetadata(self, metadataChanges):
+	def changeMetadata(self, metadataChanges):
 		if (not self.__valid): raise CollectionItemInvalidError()
 		if (self._readonly): raise CollectionItemReadonlyError()
 		self._collection.changeItem(self, metadataChanges=metadataChanges)
@@ -125,7 +125,7 @@ class CollectionItem(object):
 	def isValid(self):
 		return self.__valid
 
-	def _invalidate(self):
+	def invalidate(self):
 		self.__valid=False
 
 	def dirtyContentCache(self):

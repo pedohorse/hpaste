@@ -206,7 +206,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 			self.removeRow(vitem.row(),1,QModelIndex())
 
 
-	def removeRows(self, row, count, parent, affectCollections=True):
+	def removeRows(self, row, count, parent, affectCollections=True):  # TODO: this way of default affecting collection seem to be pretty misleading...
 		lastrow=row+count-1
 		if(parent!=QModelIndex() or count==0 or  lastrow>=self.rowCount(parent)):return False
 
@@ -215,6 +215,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		for i in xrange(count):
 			try:
 				if(affectCollections): self.__itemList[row+i].removeSelf()
+				else: self.__itemList[row+i].invalidate()
 			except:
 				everythingIsBad=True
 				break
@@ -277,6 +278,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 			return pixmap
 		return None
 
+
 class ScalingImageStyledItemDelegate(QStyledItemDelegate):
 	def sizeHint(self, option, index):
 		size = super(ScalingImageStyledItemDelegate, self).sizeHint(option, index)
@@ -302,7 +304,6 @@ class ScalingImageStyledItemDelegate(QStyledItemDelegate):
 		super(ScalingImageStyledItemDelegate, self).paint(painter, option, index)
 
 
-
 class CollectionWidget(QDropdownWidget):
 	def __init__(self,parent=None,metadataExposedKeys=()):
 		super(CollectionWidget,self).__init__(parent)
@@ -311,6 +312,7 @@ class CollectionWidget(QDropdownWidget):
 		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
 		self.ui.mainView.setItemDelegateForColumn(0, ScalingImageStyledItemDelegate(self))
+		self.__openImageDialog = None
 
 
 	def rescanCollections(self):
@@ -372,6 +374,30 @@ class CollectionWidget(QDropdownWidget):
 		:param index:
 		:return:
 		"""
+		if self.__openImageDialog is not None: return
+		dialog = QFileDialog(self)
+		filename = None
+		dialog.finished.connect(lambda res, obj=self, item=index.internalPointer(): obj._uploadIcon_iconSelected(res, item))
+		self.__openImageDialog = dialog
+		dialog.show()
+
+	def _uploadIcon_iconSelected(self, result, item):
+		self.__openImageDialog.deleteLater()
+		sel = self.__openImageDialog.selectedFiles()
+		self.__openImageDialog = None
+		if not item.isValid(): return  # since dialog is not modal (QT bugs and crashes in case of modal) we should assume something might have happened to the item
+		if result==0: return
+		filename = sel[0]
+		pix = QPixmap()
+		pix.load(filename)
+		if pix.isNull():
+			return  # bad pixmap. TODO: maybe give a warning or error
+		pixsize = pix.size()
+		if max(pixsize.width(), pixsize.height()) < 32:
+			pix = pix.scaled(QSize(32, 32), Qt.KeepAspectRatio, Qt.SmoothTransformation)
+		if pix.isNull():
+			return  # who knows
+		item.changeMetadata({'iconpixmap':pix})  # TODO: BIG one - all changings to the items MUST somehow inform model so it changes display
 
 	def __removeItem(self,index):
 		if(self._confirmRemove(index)):
@@ -440,7 +466,7 @@ if(__name__=='__main__'):
 
 		def removeItem(self,item):
 			self.__coll.remove(item)
-			item._invalidate()
+			item.invalidate()
 
 	import sys
 	from os import path
