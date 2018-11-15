@@ -134,8 +134,10 @@ class HPasteCollectionWidget(object):
 			if(newname!=oldname):item.setName(newname)
 			if(newdesc!=olddesc):item.setDescription(newdesc)
 
-		#def _replaceContent(self, index):
-			#pass
+		def _removeIcon(self, index):
+			ok = QMessageBox.warning(self,'sure?','confirm removing Icon. This operation can not be undone.',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
+			if ok:
+				super(HPasteCollectionWidget.__HPasteCollectionWidget, self)._removeIcon(index)
 
 		def _confirmRemove(self,index):
 			return QMessageBox.warning(self,'sure?','confirm removing the item from collection. This operation can not be undone.',QMessageBox.Ok|QMessageBox.Cancel) == QMessageBox.Ok
