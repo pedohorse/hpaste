@@ -369,13 +369,22 @@ class CollectionWidget(QDropdownWidget):
 		#reimplement this to add smth like confirmation window if needed
 		return True
 
+	def _removeIcon(self, index):
+		"""
+
+		:param index:
+		:return:
+		"""
+		index.internalPointer().changeMetadata({'iconpixmap':None})
+
 	def _uploadIcon(self, index):
 		"""
 		:param index:
 		:return:
 		"""
 		if self.__openImageDialog is not None: return
-		dialog = QFileDialog(self)
+		dialog = QFileDialog(self, "pick image file", QDir.homePath(), "Images (*.png *.xpm *.jpg *.jpeg *.bmp)")
+		dialog.setFileMode(QFileDialog.ExistingFile)
 		filename = None
 		dialog.finished.connect(lambda res, obj=self, item=index.internalPointer(): obj._uploadIcon_iconSelected(res, item))
 		self.__openImageDialog = dialog
@@ -393,13 +402,13 @@ class CollectionWidget(QDropdownWidget):
 		if pix.isNull():
 			return  # bad pixmap. TODO: maybe give a warning or error
 		pixsize = pix.size()
-		if max(pixsize.width(), pixsize.height()) < 32:
+		if max(pixsize.width(), pixsize.height()) > 32:
 			pix = pix.scaled(QSize(32, 32), Qt.KeepAspectRatio, Qt.SmoothTransformation)
 		if pix.isNull():
 			return  # who knows
 		item.changeMetadata({'iconpixmap':pix})  # TODO: BIG one - all changings to the items MUST somehow inform model so it changes display
 
-	def __removeItem(self,index):
+	def __removeItem(self,index):  # TODO: why did i make it private with protected overridable confirm?
 		if(self._confirmRemove(index)):
 			self.model().removeRows(index.row(),1,QModelIndex())
 
@@ -417,6 +426,8 @@ class CollectionWidget(QDropdownWidget):
 			newaction.triggered.connect(lambda x=index: self._replaceContent(x))
 			newaction = sidemenu.addAction('upload icon')
 			newaction.triggered.connect(lambda x=index: self._uploadIcon(x))
+			newaction = sidemenu.addAction('remove icon')
+			newaction.triggered.connect(lambda obj=self, x=index: obj._removeIcon(x))
 			# newaction.setEnabled(False)
 			# TODO: automatically enable stuff if subclass overrides item methods!
 			sidemenu.addSeparator()
