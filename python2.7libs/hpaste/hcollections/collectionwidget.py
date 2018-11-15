@@ -343,6 +343,11 @@ class CollectionWidget(QDropdownWidget):
 		"""
 		return self.model().removeCollection(collection)
 
+	@Slot(str)
+	def filterTable(self, filtername):
+		super(CollectionWidget, self).filterTable(filtername)
+		self.sort(0)
+
 
 	def _addItem(self,collection):
 		log('_addItem should be reimplemented in subclass to do what is needed in any specific situation',3)
