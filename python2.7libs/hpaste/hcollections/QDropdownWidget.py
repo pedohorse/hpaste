@@ -198,6 +198,10 @@ class QDropdownWidget(QWidget):
 	def filterTable(self,filtername):
 		self.__proxyModel.setFilterRegExp(QRegExp("%s"%filtername, Qt.CaseInsensitive, QRegExp.Wildcard))
 
+	@Slot(int)
+	def sort(self, column=0):
+		self.__proxyModel.sort(column, Qt.AscendingOrder)
+
 ####QT overrides
 	def changeEvent(self, event):
 		super(QDropdownWidget, self).changeEvent(event)
@@ -207,8 +211,8 @@ class QDropdownWidget(QWidget):
 
 	@Slot()
 	def accept(self):
-		self.accepted.emit(self._mapToSource(self.ui.mainView.currentIndex()).internalPointer())
 		self.hide()
+		self.accepted.emit(self._mapToSource(self.ui.mainView.currentIndex()).internalPointer())
 
 	def keyPressEvent(self,event):
 		if(event.key()==Qt.Key_Up):
