@@ -16,7 +16,7 @@ try:
 	qtAvailable = True
 except ImportError:
 	from PySide.QtGui import QPixmap
-	from PySide2.QtCore import QBuffer, QByteArray
+	from PySide.QtCore import QBuffer, QByteArray
 	qtAvailable = True
 
 
@@ -273,7 +273,7 @@ class GithubCollection(CollectionBase):
 		#newContent=str(newContent)
 		#just in case we have random unicode coming in
 		#TODO: check that item belongs to this collection. just in case
-		#TODO NEXT: update item version if needed on change !!! Before any changes
+
 		if item.readonly():raise CollectionReadonlyError()
 
 		# Upgrade version if needed
@@ -370,35 +370,49 @@ class GithubCollection(CollectionBase):
 				# Shall i implement this case? for when qt is not loaded
 			if 'iconpixmap' in metadataChanges and qtAvailable:
 				pix = metadataChanges['iconpixmap']
-				barr = QByteArray()
-				buff = QBuffer(barr)
-				pix.save(buff, "PNG")
-				imagedata = base64.b64encode(barr.data())
-				buff.deleteLater()
+				if pix is None:  # removing pixmap
+					if 'iconpixmap' in item.metadata():
+						data = {'files':{item.metadata()['iconfullname']:None}}
+						req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data), headers=self.__headers)
+						req.get_method = lambda: 'PATCH'
+						code, rep = urlopen_nt(req)
+						if (code != 200):
+							if (code == 403): raise InvalidToken('github auth failed')
+							raise CollectionSyncError("unexpected server return level %d" % code)
+						rep.close()
+						del item._meta['iconpixmap']
+						del item._meta['iconfullname']
+						del item._meta['icondata']
+				else:
+					barr = QByteArray()
+					buff = QBuffer(barr)
+					pix.save(buff, "PNG")
+					imagedata = base64.b64encode(barr.data())
+					buff.deleteLater()
 
-				oldiconname = item.metadata().get('iconfullname', None)
-				newiconname = 'icon:PNG-base64:autoicon'
+					oldiconname = item.metadata().get('iconfullname', None)
+					newiconname = 'icon:PNG-base64:autoicon'
 
-				data = {'files':{}}
-				if oldiconname is not None and oldiconname != newiconname:
-					data['files'][oldiconname]=None
+					data = {'files':{}}
+					if oldiconname is not None and oldiconname != newiconname:
+						data['files'][oldiconname]=None
 
-				data['files'][newiconname]={'content':imagedata}
-				req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
-				req.get_method = lambda: 'PATCH'
-				code, rep = urlopen_nt(req)
-				if (code != 200):
-					if (code == 403): raise InvalidToken('github auth failed')
-					raise CollectionSyncError("unexpected server return level %d" % code)
-				replydict = json.loads(rep.read())
+					data['files'][newiconname]={'content':imagedata}
+					req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
+					req.get_method = lambda: 'PATCH'
+					code, rep = urlopen_nt(req)
+					if (code != 200):
+						if (code == 403): raise InvalidToken('github auth failed')
+						raise CollectionSyncError("unexpected server return level %d" % code)
+					replydict = json.loads(rep.read())
 
-				if newiconname not in replydict['files']:
-					raise CollectionSyncError("icon file was not uploaded properly")
+					if newiconname not in replydict['files']:
+						raise CollectionSyncError("icon file was not uploaded properly")
 
-				globalIconCacher[replydict['files'][newiconname]['raw_url']] = imagedata
-				item._meta['iconfullname'] = newiconname
-				item._meta['icondata'] = imagedata
-				item._meta['iconpixmap'] = pix
+					globalIconCacher[replydict['files'][newiconname]['raw_url']] = imagedata
+					item._meta['iconfullname'] = newiconname
+					item._meta['icondata'] = imagedata
+					item._meta['iconpixmap'] = pix
 
 			for metakey in metadataChanges.keys():
 				# All special cases are taken care of, so now just blind copy all remaining changes
