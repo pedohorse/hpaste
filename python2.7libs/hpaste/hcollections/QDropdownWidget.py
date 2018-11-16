@@ -11,6 +11,7 @@ except ImportError:
 	from PySide.QtCore import *
 	from PySide.QtGui import *
 
+import re
 
 class QAdjustedTableView(QTableView):
 	itemsChanged = Signal()
@@ -195,7 +196,8 @@ class QDropdownWidget(QWidget):
 
 	@Slot(str)
 	def filterTable(self,filtername):
-		self.__proxyModel.setFilterRegExp(QRegExp("%s"%filtername, Qt.CaseInsensitive, QRegExp.Wildcard))
+		#self.__proxyModel.setFilterRegExp(QRegExp("%s"%filtername, Qt.CaseInsensitive, QRegExp.Wildcard))
+		self.__proxyModel.setFilterRegExp(QRegExp(".+".join(re.split(r'\s+', filtername)), Qt.CaseInsensitive, QRegExp.RegExp2))
 
 	@Slot(int)
 	def sort(self, column=0):
