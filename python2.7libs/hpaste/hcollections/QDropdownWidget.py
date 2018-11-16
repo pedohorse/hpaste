@@ -37,7 +37,7 @@ class QAdjustedTableView(QTableView):
 		if self.model():
 			for i in range(self.horizontalHeader().count()):
 				if self.horizontalHeader().isSectionHidden(i): continue
-				wgt += self.sizeHintForColumn(i) + 1 #  CAUTION: there's no confirmation that header logical index corresponds directly to View's columns
+				wgt += self.sizeHintForColumn(i) + 2 #  CAUTION: there's no confirmation that header logical index corresponds directly to View's columns
 
 		scrbarw = 0 if self.verticalScrollBar().isHidden() else self.verticalScrollBar().sizeHint().width()
 		return QSize(wgt + scrbarw + 8, self.verticalHeader().length() + 4)
