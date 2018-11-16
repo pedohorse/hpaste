@@ -20,11 +20,10 @@ import urllib2 #just for exception catching
 from githubauthorizator import GithubAuthorizator
 
 
-
 class HPasteCollectionWidget(object):
 	class __HPasteCollectionWidget(CollectionWidget):
 		def __init__(self, parent=None):
-			super(HPasteCollectionWidget.__HPasteCollectionWidget,self).__init__(parent,metadataExposedKeys=('raw_url','nettype'))
+			super(HPasteCollectionWidget.__HPasteCollectionWidget,self).__init__(parent, metadataExposedKeys=('raw_url','nettype'))
 			for x in xrange(1, 5):
 				self.ui.mainView.horizontalHeader().hideSection(x)
 
@@ -39,6 +38,8 @@ class HPasteCollectionWidget(object):
 			self.accepted.connect(self.doOnAccept)
 
 			self.__insideAuthCallback = False
+			#self.setProperty("houdiniStyle", True)
+
 
 		def setNetworkEditor(self,pane):
 			if(not isinstance(pane,hou.NetworkEditor)):

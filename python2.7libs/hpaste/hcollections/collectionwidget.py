@@ -65,6 +65,9 @@ class CollectionListerThread(QThread):
 
 
 class SnippetCollectionModel(QAbstractTableModel):
+	asyncLoadingStarted = Signal()
+	asyncLoadingFinished = Signal()
+
 	def __init__(self,collectionsList,parent=None,metadataExposedKeys=()):
 		assert isinstance(metadataExposedKeys,list) or isinstance(metadataExposedKeys,tuple), 'metadataExposeKeys should be a collection of string keys'
 
@@ -92,13 +95,18 @@ class SnippetCollectionModel(QAbstractTableModel):
 		assert isinstance(collection, collectionbase.CollectionBase), 'collection must be a collection'
 		if collection in self.__collections or collection in self.__asyncProcessedCollections.keys(): return
 
+		firstone = len(self.__asyncProcessedCollections) == 0
 		thread = CollectionListerThread(collection, self)
 		self.__asyncProcessedCollections[collection] = thread
 		thread.workdone.connect(self.__addCollectionAsync_finish)
 		thread.workerror.connect(self.__addCollectionAsync_error)
 		thread.finished.connect(thread.deleteLater)
+		if firstone:
+			self.asyncLoadingStarted.emit()
 		thread.start()
 
+	def asyncLoadingCollectionsCount(self):
+		return len(self.__asyncProcessedCollections)
 
 	@Slot(tuple)
 	def __addCollectionAsync_finish(self, threaddata):
@@ -119,6 +127,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.beginInsertRows(QModelIndex(), nextid, nextid + len(itemlist) - 1)
 		self.__itemList += itemlist
 		self.endInsertRows()
+		if len(self.__asyncProcessedCollections) == 0: self.asyncLoadingFinished.emit()
 
 	@Slot(tuple)
 	def __addCollectionAsync_error(self, threaddata):
@@ -133,6 +142,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		del self.__asyncProcessedCollections[collection]  # delete from pending list
 
 		print("Collection %s failed to load: %s" % (collection.name(), errormessage))
+		if len(self.__asyncProcessedCollections) == 0: self.asyncLoadingFinished.emit()
 
 	def removeCollection(self,collection):
 		"""
@@ -305,14 +315,25 @@ class ScalingImageStyledItemDelegate(QStyledItemDelegate):
 
 
 class CollectionWidget(QDropdownWidget):
-	def __init__(self,parent=None,metadataExposedKeys=()):
+	def __init__(self, parent=None, metadataExposedKeys=()):
 		super(CollectionWidget,self).__init__(parent)
+		self.setProperty("houdiniStyle", True) # for some unknown reason it works only if it's here or higher. TODO: find out why, move to hpastecollectionwidget
 		self.setModel(SnippetCollectionModel([],self,metadataExposedKeys))
 
 		self.ui.mainView.setContextMenuPolicy(Qt.CustomContextMenu)
 		self.ui.mainView.customContextMenuRequested.connect(self.showContextMenu)
 		self.ui.mainView.setItemDelegateForColumn(0, ScalingImageStyledItemDelegate(self))
 		self.__openImageDialog = None
+
+		self.ui.loadingLabel = QLabel("loading...", self)
+		smallFont = QFont(self.font())
+		smallFont.setItalic(True)
+		smallFont.setPointSize(8)
+		self.ui.loadingLabel.setFont(smallFont)
+		self.ui.mainLayout.insertWidget(1, self.ui.loadingLabel, alignment=Qt.AlignCenter)
+		self.ui.loadingLabel.hide()
+		self.model().asyncLoadingStarted.connect(lambda sobj=self: sobj.ui.loadingLabel.show() or sobj.adjustSize())
+		self.model().asyncLoadingFinished.connect(lambda sobj=self: sobj.ui.loadingLabel.hide() or sobj.adjustSize() or sobj.sort(0))
 
 
 	def rescanCollections(self):
