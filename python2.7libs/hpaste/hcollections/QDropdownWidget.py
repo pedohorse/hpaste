@@ -2,7 +2,6 @@ if(__name__=='__main__'):
 	import os
 	#path for QT dlls if run from pycharm
 	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
-	from pprint import pprint
 
 try:
 	from PySide2.QtCore import *

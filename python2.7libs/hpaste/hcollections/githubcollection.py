@@ -6,6 +6,7 @@ import re
 import base64
 
 from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
+from logger import defaultLogger as log
 
 currentVersion = (1, 1)
 
@@ -142,11 +143,11 @@ class GithubCollection(CollectionBase):
 				# first of all check version
 				verfiles = [x for x in files if x.startswith("ver:")]
 				if len(verfiles) != 1:
-					print("skipping a broken collection item, id:%s" % gist['id'])
+					log("skipping a broken collection item, id:%s" % gist['id'], 2)
 					continue
 				ver = map(lambda x: int(x), verfiles[0].split(':', 1)[1].split('.'))
 				if ver[0] != currentVersion[0]:
-					print("unsupported collection item version, id:%s" % gist['id'])
+					log("unsupported collection item version, id:%s" % gist['id'], 2)
 					continue
 
 				# now get the item

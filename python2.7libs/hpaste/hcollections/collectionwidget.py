@@ -141,7 +141,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		self.__asyncProcessedCollections[collection].wait()
 		del self.__asyncProcessedCollections[collection]  # delete from pending list
 
-		print("Collection %s failed to load: %s" % (collection.name(), errormessage))
+		log("Collection %s failed to load: %s" % (collection.name(), errormessage), 3)
 		if len(self.__asyncProcessedCollections) == 0: self.asyncLoadingFinished.emit()
 
 	def removeCollection(self,collection):

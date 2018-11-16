@@ -13,6 +13,8 @@ from hcollections.collectionbase import CollectionSyncError,CollectionItem
 from hcollections.githubcollection import GithubCollection
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 
+from hcollections.logger import defaultLogger as log
+
 import urllib2 #just for exception catching
 
 #TODO: implement some kind of collection rescan
@@ -234,7 +236,7 @@ class HPasteCollectionWidget(object):
 			# set callback
 			GithubAuthorizator.registerCollectionChangedCallback((HPasteCollectionWidget.__instance, HPasteCollectionWidget.__HPasteCollectionWidget._authCallback))
 		elif(parent is not HPasteCollectionWidget.__instance.parent()):
-			print("reparenting")
+			log("reparenting", 0)
 			HPasteCollectionWidget.__instance.setParent(parent)
 
 	@classmethod
