@@ -41,6 +41,9 @@ class HPasteCollectionWidget(object):
 
 			self.__insideAuthCallback = False
 			#self.setProperty("houdiniStyle", True)
+			ss = "QTableView{border : 0px solid; gridline-color: rgb(48,48,48)}"
+			ss += "QHeaderView::section{border-style: none; border-bottom: 0px; border-right: 0px;}"
+			self.setStyleSheet(ss)
 
 
 		def setNetworkEditor(self,pane):
