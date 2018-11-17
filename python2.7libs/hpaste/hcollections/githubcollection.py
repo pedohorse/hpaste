@@ -185,15 +185,13 @@ class GithubCollection(CollectionBase):
 						if icontype == 'XPM-simple':
 							newitem.metadata()['iconfullname'] = ':'.join((filetype, icontype, iconname))
 							newitem.metadata()['icondata'] = data
-							xpmlines = map(lambda x: x.replace('"', ''), re.findall('"[^"]*"', data))
-							newitem.metadata()['iconpixmap'] = QPixmap(xpmlines)
+							#xpmlines = map(lambda x: x.replace('"', ''), re.findall('"[^"]*"', data))
+							newitem.metadata()['iconpixmap'] = (data, "XPM") # Since this can be run in a different Thread - we do not create actual QPixmap here, just keep data for it's creation on demand
 
 						if icontype == 'PNG-base64':
 							newitem.metadata()['iconfullname'] = ':'.join((filetype, icontype, iconname))
 							newitem.metadata()['icondata'] = data
-							pix = QPixmap()
-							pix.loadFromData(base64.b64decode(data), "PNG")
-							newitem.metadata()['iconpixmap'] = pix
+							newitem.metadata()['iconpixmap'] = (base64.b64decode(data), "PNG") # Since this can be run in a different Thread - we do not create actual QPixmap here, just keep data for it's creation on demand
 
 				res.append(newitem)
 
