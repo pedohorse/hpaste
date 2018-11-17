@@ -149,8 +149,6 @@ class GithubAuthorizator(object):
 
 				if(code == 201):
 					repdata=json.loads(rep.read())
-					from pprint import pprint
-					pprint(repdata)
 
 					newauth['token']=repdata['token'] #TODO: check if reply is as expected
 					newauth['user']=username
