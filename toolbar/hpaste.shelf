@@ -191,7 +191,6 @@ do(kwargs)]]></script>
 
   <tool name="hpastecollectionauth" label="Collection Authorization" icon="cloud-computing-tools-svgrepo-com">
     <script scriptType="python"><![CDATA[import hpaste.accountsmanager
-reload(hpaste.accountsmanager)
 from hpaste.accountsmanager import AccountsManager
 
 try:
