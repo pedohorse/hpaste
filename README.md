@@ -79,3 +79,8 @@ You can read a bit more about it in here:
    * **hpastecollectionauth** - account manager for hpaste collections
         * add any number of private and public collections to use
 
+## Attributions ##
+Icons in hpaste-demo-collection:
+* Icon made by Freepik from www.flaticon.com
+* Icon made by Pixel perfect from www.flaticon.com
+

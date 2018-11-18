@@ -2,3 +2,4 @@
 **/backup
 **/*.pyc
 *token.tok
+venv

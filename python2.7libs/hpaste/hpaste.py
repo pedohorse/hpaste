@@ -179,26 +179,27 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 		if(opt is not None):
 			force_prefer_hdas = opt.getOption('hpaste.force_prefer_hdas', force_prefer_hdas)
 
-
-	paste_to_cursor=ne is not None
-	if (hou_parent is None):
-		if(ne is None):
-			ne = hou.ui.paneTabOfType(hou.paneTabType.NetworkEditor)
-			if (ne is None): raise RuntimeError("cannot find opened network editor")
-		hou_parent = ne.pwd()
-
 	s = str(s)  # ununicode. there should not be any unicode in it anyways
 	try:
 		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)))
 	except Exception as e:
 		raise RuntimeError("input data is either corrupted or just not a nodecode: " + str(e.message))
 
+	houver1 = hou.applicationVersion()
+
+	paste_to_cursor=ne is not None
+	if (hou_parent is None):
+		if(ne is None):
+			nes = [x for x in hou.ui.paneTabs() if x.type() == hou.paneTabType.NetworkEditor and getChildContext(x.pwd(), houver1) == data['context']]
+			if (len(nes)==0): raise RuntimeError("this snippet has '{0}' context. cannot find opened network editor with context '{0}' to paste in".format(data['context']))
+			ne = nes[0]
+		hou_parent = ne.pwd()
+
 	# check version
 	formatVersion=data['version']
 	if (formatVersion > 2): raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
 
 	# check accepted algtypes
-	houver1 = hou.applicationVersion()
 	supportedAlgs = set()
 	if (houver1[0] == 15):
 		supportedAlgs.add(0)
