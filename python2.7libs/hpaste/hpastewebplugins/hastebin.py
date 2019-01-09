@@ -1,7 +1,7 @@
 import urllib2
 import json
 
-from ..webclipboardbase import WebClipBoardBase
+from ..webclipboardbase import WebClipBoardBase, WebClipBoardWidNotFound
 from .. import hpasteoptions as opt
 
 
@@ -44,6 +44,10 @@ class HasteBin(WebClipBoardBase):
 		try:
 			req = urllib2.Request(r"https://hastebin.com/raw/" + id, headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
+		except urllib2.HTTPError as e:
+			if e.code == 404:
+				raise WebClipBoardWidNotFound(id)
+			raise RuntimeError("error connecting to web clipboard: " + e.message)
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
 

@@ -1,7 +1,7 @@
 import urllib2
 import json
 
-from ..webclipboardbase import WebClipBoardBase
+from ..webclipboardbase import WebClipBoardBase, WebClipBoardWidNotFound
 from .. import hpasteoptions as opt
 
 
@@ -32,7 +32,8 @@ class HPaste(WebClipBoardBase):
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
 
 		try:
-			id=json.loads(repstring)['key']
+			repson = json.loads(repstring)
+			id=repson['key']
 		except Exception as e:
 			raise RuntimeError("Unknown Server responce: "+str(e.message))
 
@@ -44,6 +45,10 @@ class HPaste(WebClipBoardBase):
 		try:
 			req = urllib2.Request(r"https://hou-hpaste.herokuapp.com/raw/" + id, headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
+		except urllib2.HTTPError as e:
+			if e.code == 404:
+				raise WebClipBoardWidNotFound(id)
+			raise RuntimeError("error connecting to web clipboard: " + e.message)
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + e.message)
 
