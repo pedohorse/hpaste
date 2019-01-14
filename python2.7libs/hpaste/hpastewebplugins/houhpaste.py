@@ -11,7 +11,7 @@ class HPaste(WebClipBoardBase):
 
 	@classmethod
 	def speedClass(cls):
-		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__, 8)
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__, 10)
 
 	@classmethod
 	def maxStringLength(self):
