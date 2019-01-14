@@ -5,13 +5,13 @@ from ..webclipboardbase import WebClipBoardBase, WebClipBoardWidNotFound
 from .. import hpasteoptions as opt
 
 
-class HasteBin(WebClipBoardBase):
+class HPaste(WebClipBoardBase):
 	def __init__(self):
 		self.__headers = {'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
 
 	@classmethod
 	def speedClass(cls):
-		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__,1)#was 5, but ssl error
+		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__, 10)
 
 	@classmethod
 	def maxStringLength(self):
@@ -23,7 +23,7 @@ class HasteBin(WebClipBoardBase):
 		if (len(s) > self.maxStringLength()): raise RuntimeError("len of s it too big for web clipboard currently")
 
 		try:
-			req = urllib2.Request(r"https://hastebin.com/documents", s, headers=self.__headers)
+			req = urllib2.Request(r"https://hou-hpaste.herokuapp.com/documents", s, headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
 			repstring = rep.read()
 		except Exception as e:
@@ -32,7 +32,8 @@ class HasteBin(WebClipBoardBase):
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
 
 		try:
-			id=json.loads(repstring)['key']
+			repson = json.loads(repstring)
+			id=repson['key']
 		except Exception as e:
 			raise RuntimeError("Unknown Server responce: "+str(e.message))
 
@@ -42,7 +43,7 @@ class HasteBin(WebClipBoardBase):
 	def webUnpackData(self, id):
 		id=str(id)
 		try:
-			req = urllib2.Request(r"https://hastebin.com/raw/" + id, headers=self.__headers)
+			req = urllib2.Request(r"https://hou-hpaste.herokuapp.com/raw/" + id, headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
 		except urllib2.HTTPError as e:
 			if e.code == 404:

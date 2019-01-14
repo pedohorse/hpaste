@@ -2,6 +2,13 @@
 
 #TODO: move this class to hpastewebplugins
 
+class WebClipBoardError(RuntimeError):
+	pass
+
+class WebClipBoardWidNotFound(WebClipBoardError):
+	def __init__(self, wid):
+		self.wid = wid
+
 class WebClipBoardBase(object):
 
 	@classmethod

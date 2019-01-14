@@ -3,6 +3,8 @@ import widcacher
 import random  # to shuffle plugins
 import re  # to cleanup wid
 
+from webclipboardbase import WebClipBoardWidNotFound
+
 def webPack(asciiText, pluginList = None, maxChunkSize = None):
 	allPackids=[]
 	done=False
@@ -72,13 +74,16 @@ def webUnpack(wid, useCached=True, cache=None):
 				unpacker=cls()
 				asciiText=unpacker.webUnpackData(id)
 				break
+			except WebClipBoardWidNotFound as e:
+				raise RuntimeError('item "%s" does not exist. it may have expired' % e.wid)
 			except Exception as e:
 				print("error: %s: %s" % (str(type(e)), str(e.message)))
-				print("Exception: %s"%repr(e))
+				print("Exception: %s" % repr(e))
 				print("keep trying...")
 				continue
 		if(asciiText is None):
-			raise RuntimeError("couldnt web unpack data")
+			print("failed")
+			raise RuntimeError("couldn't web unpack data")
 		asciiTextParts.append(asciiText)
 
 	finalText = ''.join(asciiTextParts)
