@@ -117,19 +117,25 @@ class GithubCollection(CollectionBase):
 		#this should produce list of snippets in the collection
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
-		requrl=r'https://api.github.com/gists&per_page=100'
-		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists&per_page=100' % self.name()
+		requrl=r'https://api.github.com/gists?per_page=100'
+		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists?per_page=100' % self.name()
 		gists = []
+		pagenum = 0
 		while True:
 			req=urllib2.Request(requrl,headers=self.__headers)
 			code, rep = urlopen_nt(req)
 
-			if(code!=200):
-				if (code == 403): raise InvalidToken('github auth failed')
-				raise CollectionSyncError("unexpected server return level %d" % code)
-
 			repheaders = rep.info()
-			log(str(repheaders),0)
+			log(str(repheaders), 0)
+
+			if(code!=200):
+				if (code == 403):
+					if pagenum == 0:
+						raise InvalidToken('github auth failed')
+					else: # means we have already succesfully got page 0 therefore 403 means limit hit or abuse trigger so we warn and continue
+						log('Not all snippets could be retrieved from github due to api rate limitation')
+						break # TODO: postpone this and retry later!
+				raise CollectionSyncError("unexpected server return level %d" % code)
 
 			data = json.loads(rep.read())
 			gists += [x for x in data if '00_HPASTE_SNIPPET' in x['files']]
@@ -154,6 +160,7 @@ class GithubCollection(CollectionBase):
 				if 'next' not in linksdict:
 					break
 				requrl = linksdict['next']
+				pagenum += 1
 				continue
 			break
 
