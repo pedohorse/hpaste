@@ -106,16 +106,44 @@ class GithubCollection(CollectionBase):
 		# note, that id is not a wid,
 		requrl=r'https://api.github.com/gists'
 		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists' % self.name()
-		req=urllib2.Request(requrl,headers=self.__headers)
-		code, rep = urlopen_nt(req)
+		gists = []
+		while True:
+			req=urllib2.Request(requrl,headers=self.__headers)
+			code, rep = urlopen_nt(req)
 
-		if(code!=200):
-			if (code == 403): raise InvalidToken('github auth failed')
-			raise CollectionSyncError("unexpected server return level %d" % code)
+			if(code!=200):
+				if (code == 403): raise InvalidToken('github auth failed')
+				raise CollectionSyncError("unexpected server return level %d" % code)
 
-		log(str(rep.info()),0)
-		data=json.loads(rep.read())
-		gists=[x for x in data if '00_HPASTE_SNIPPET' in x['files']]
+			repheaders = rep.info()
+			log(str(repheaders),0)
+
+			data = json.loads(rep.read())
+			gists += [x for x in data if '00_HPASTE_SNIPPET' in x['files']]
+
+			if 'link' in repheaders:
+				rhlinks = repheaders['link']
+				linksdict = {}
+				for l in rhlinks.split(','):
+					_key = None
+					_val = None
+					for k in l.split(';'):
+						m = re.match('rel="(\w+)"', k.strip())
+						if m:
+							_key = m.group(1)
+						m = re.match('<([-a-zA-Z0-9@:%_\+.~#?&\/=]+)>', k.strip())
+						if m:
+							_val = m.group(1)
+					if _key is None or _val is None:
+						log('failed to parse page links', 3)
+
+					linksdict[_key] = _val
+				if 'next' not in linksdict:
+					break
+				requrl = linksdict['next']
+				continue
+			break
+
 		if(len(gists)==0):
 			return ()
 
