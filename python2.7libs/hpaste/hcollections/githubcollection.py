@@ -23,6 +23,18 @@ except ImportError:
 
 from logger import defaultLogger as log
 
+class ErrorReply(object):
+	def __init__(self, code, headers={}, msg=''):
+		self.__headers = headers
+		self.__code = code
+		self.msg = msg
+
+	def info(self):
+		return self.__headers
+
+	def read(self):
+		return None
+
 
 def urlopen_nt(req):
 	code = -1
@@ -31,6 +43,7 @@ def urlopen_nt(req):
 		rep = urllib2.urlopen(req)
 	except urllib2.HTTPError as e:
 		code = e.code
+		rep = ErrorReply(code, e.headers, e.msg)
 	except urllib2.URLError as e:
 		raise CollectionSyncError('unable to reach collection: %s'%e.reason)
 
@@ -104,8 +117,8 @@ class GithubCollection(CollectionBase):
 		#this should produce list of snippets in the collection
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
-		requrl=r'https://api.github.com/gists'
-		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists' % self.name()
+		requrl=r'https://api.github.com/gists&per_page=100'
+		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists&per_page=100' % self.name()
 		gists = []
 		while True:
 			req=urllib2.Request(requrl,headers=self.__headers)
