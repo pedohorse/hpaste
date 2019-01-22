@@ -227,7 +227,7 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 
 
 	if (paste_to_cursor):
-		if (houver1[0] == 16):
+		if (houver1[0] >= 16):
 			olditems = hou_parent.allItems()
 		else:
 			olditems = hou_parent.children()
