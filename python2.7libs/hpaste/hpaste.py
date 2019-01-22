@@ -159,7 +159,7 @@ def nodesToString(nodes, transfer_assets = None):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None):
+def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None, override_network_position = None):
 	'''
 	TODO: here to be a docstring
 	:param s:
@@ -167,6 +167,7 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 	:param ne:
 	:param ignore_hdas_if_already_defined:
 	:param force_prefer_hdas:
+	:override_network_position: hou.Vector2 - position in networkview pane
 	:return:
 	'''
 	if (ignore_hdas_if_already_defined is None):
@@ -187,7 +188,7 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 
 	houver1 = hou.applicationVersion()
 
-	paste_to_cursor=ne is not None
+	paste_to_position = ne is not None or override_network_position is not None
 	if (hou_parent is None):
 		if(ne is None):
 			nes = [x for x in hou.ui.paneTabs() if x.type() == hou.paneTabType.NetworkEditor and getChildContext(x.pwd(), houver1) == data['context']]
@@ -226,7 +227,7 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 		raise RuntimeError("checksum failed!")
 
 
-	if (paste_to_cursor):
+	if (paste_to_position):
 		if (houver1[0] >= 16):
 			olditems = hou_parent.allItems()
 		else:
@@ -309,7 +310,7 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 	else:
 		raise RuntimeError("algorithm type is not supported. Try updating hpaste to the latest version")
 
-	if(paste_to_cursor):
+	if(paste_to_position):
 		#now collect pasted nodes
 		if (houver1[0] >= 16):
 			newitems = [x for x in hou_parent.allItems() if x not in olditems]
@@ -332,7 +333,10 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 
 		cpos=cpos/cnt
 		cpos[1]=bbmax[1]
-		offset=ne.cursorPosition()-cpos
+		if override_network_position is None:
+			offset = ne.cursorPosition() - cpos
+		else:
+			offset = override_network_position - cpos
 		for item in newitems:
 			if(houver1[0] >= 16 and item.parentNetworkBox() in newitems):
 				continue
