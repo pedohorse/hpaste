@@ -23,6 +23,18 @@ except ImportError:
 
 from logger import defaultLogger as log
 
+class ErrorReply(object):
+	def __init__(self, code, headers={}, msg=''):
+		self.__headers = headers
+		self.__code = code
+		self.msg = msg
+
+	def info(self):
+		return self.__headers
+
+	def read(self):
+		return None
+
 
 def urlopen_nt(req):
 	code = -1
@@ -31,6 +43,7 @@ def urlopen_nt(req):
 		rep = urllib2.urlopen(req)
 	except urllib2.HTTPError as e:
 		code = e.code
+		rep = ErrorReply(code, e.headers, e.msg)
 	except urllib2.URLError as e:
 		raise CollectionSyncError('unable to reach collection: %s'%e.reason)
 
@@ -104,18 +117,53 @@ class GithubCollection(CollectionBase):
 		#this should produce list of snippets in the collection
 		#the list should be a tuple of CollectionItem-s
 		# note, that id is not a wid,
-		requrl=r'https://api.github.com/gists'
-		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists' % self.name()
-		req=urllib2.Request(requrl,headers=self.__headers)
-		code, rep = urlopen_nt(req)
+		requrl=r'https://api.github.com/gists?per_page=100'
+		if(self.__readonly):requrl=r'https://api.github.com/users/%s/gists?per_page=100' % self.name()
+		gists = []
+		pagenum = 0
+		while True:
+			req=urllib2.Request(requrl,headers=self.__headers)
+			code, rep = urlopen_nt(req)
 
-		if(code!=200):
-			if (code == 403): raise InvalidToken('github auth failed')
-			raise CollectionSyncError("unexpected server return level %d" % code)
+			repheaders = rep.info()
+			log(str(repheaders), 0)
 
-		log(str(rep.info()),0)
-		data=json.loads(rep.read())
-		gists=[x for x in data if '00_HPASTE_SNIPPET' in x['files']]
+			if(code!=200):
+				if (code == 403):
+					if pagenum == 0:
+						raise InvalidToken('github auth failed')
+					else: # means we have already succesfully got page 0 therefore 403 means limit hit or abuse trigger so we warn and continue
+						log('Not all snippets could be retrieved from github due to api rate limitation')
+						break # TODO: postpone this and retry later!
+				raise CollectionSyncError("unexpected server return level %d" % code)
+
+			data = json.loads(rep.read())
+			gists += [x for x in data if '00_HPASTE_SNIPPET' in x['files']]
+
+			if 'link' in repheaders:
+				rhlinks = repheaders['link']
+				linksdict = {}
+				for l in rhlinks.split(','):
+					_key = None
+					_val = None
+					for k in l.split(';'):
+						m = re.match('rel="(\w+)"', k.strip())
+						if m:
+							_key = m.group(1)
+						m = re.match('<([-a-zA-Z0-9@:%_\+.~#?&\/=]+)>', k.strip())
+						if m:
+							_val = m.group(1)
+					if _key is None or _val is None:
+						log('failed to parse page links', 3)
+
+					linksdict[_key] = _val
+				if 'next' not in linksdict:
+					break
+				requrl = linksdict['next']
+				pagenum += 1
+				continue
+			break
+
 		if(len(gists)==0):
 			return ()
 
