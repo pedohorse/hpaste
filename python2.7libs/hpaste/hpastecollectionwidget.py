@@ -45,12 +45,15 @@ class HPasteCollectionWidget(object):
 			ss += "QHeaderView::section{border-style: none; border-bottom: 0px; border-right: 0px;}"
 			self.setStyleSheet(ss)
 
+			self.__savedNetworkViewPos = None
+
 
 		def setNetworkEditor(self,pane):
 			if(not isinstance(pane,hou.NetworkEditor)):
 				pane=None
 
 			self.__nepane = pane #save to position pasted nodes in it
+			self.__savedNetworkViewPos = pane.cursorPosition()
 
 			if(pane is None):
 				nettype='*'
@@ -68,7 +71,7 @@ class HPasteCollectionWidget(object):
 					hou.clearAllSelected()
 				except: #<=h15.5
 					hou.node("/obj").setSelected(False,clear_all_selected=True)
-				hpaste.stringToNodes(item.content(),ne=self.__nepane)
+				hpaste.stringToNodes(item.content(), ne=self.__nepane, override_network_position=self.__savedNetworkViewPos)
 			except Exception as e:
 				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)
 
