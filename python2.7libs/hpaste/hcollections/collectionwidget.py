@@ -283,6 +283,9 @@ class SnippetCollectionModel(QAbstractTableModel):
 				key=self.__metadataExposedKeys[index.column()-3]
 				if(key in metadata): return metadata[key]
 				else: return ''
+		elif role == Qt.ToolTipRole:
+			if index.column() == 0:
+				return self.__itemList[index.row()].description()
 		elif role == Qt.UserRole and 'iconpixmap' in self.__itemList[index.row()].metadata():  # UserRole instead of DecoratorRole cuz of strange QtWarning on Windows at first item show only when trying to prevent default delegate painter from drawint decorator.
 			pixmap = self.__itemList[index.row()].metadata()['iconpixmap']
 			if isinstance(pixmap, tuple):  # if image was loaded - information for QPixmap creation is passed, not the actual QPixamp cuz loading might have been done in a different thread
