@@ -14,8 +14,21 @@ class HPaste(WebClipBoardBase):
 		return opt.getOption('hpasteweb.plugins.%s.speed_class'%cls.__name__, 10)
 
 	@classmethod
-	def maxStringLength(self):
+	def maxStringLength(cls):
 		return 400000
+
+	@classmethod
+	def urlopen(cls, url, timeout=30):
+		try:
+			rep = urllib2.urlopen(url, timeout=timeout)
+		except urllib2.URLError as e:
+			try:
+				import certifi
+				rep = urllib2.urlopen(url, timeout=timeout, cafile=certifi.where())
+			except ImportError:
+				import ssl
+				rep = urllib2.urlopen(url, timeout=timeout, context=ssl._create_unverified_context())
+		return rep
 
 	def webPackData(self, s):
 		if (not isinstance(s, str)):
@@ -24,7 +37,7 @@ class HPaste(WebClipBoardBase):
 
 		try:
 			req = urllib2.Request(r"https://hou-hpaste.herokuapp.com/documents", s, headers=self.__headers)
-			rep = urllib2.urlopen(req, timeout=30)
+			rep = self.urlopen(req, timeout=30)
 			repstring = rep.read()
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + str(e.message))
@@ -44,7 +57,7 @@ class HPaste(WebClipBoardBase):
 		id=str(id)
 		try:
 			req = urllib2.Request(r"https://hou-hpaste.herokuapp.com/raw/" + id, headers=self.__headers)
-			rep = urllib2.urlopen(req, timeout=30)
+			rep = self.urlopen(req, timeout=30)
 		except urllib2.HTTPError as e:
 			if e.code == 404:
 				raise WebClipBoardWidNotFound(id)
