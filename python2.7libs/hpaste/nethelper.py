@@ -1,5 +1,4 @@
 import urllib2
-import collectionbase
 from logger import defaultLogger as log
 
 class ErrorReply(object):
