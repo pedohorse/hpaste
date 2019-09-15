@@ -5,6 +5,7 @@ import copy
 import re
 import base64
 
+from nethelper import urlopen_nt, ErrorReply
 from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
 from logger import defaultLogger as log
 
@@ -19,36 +20,6 @@ except ImportError:
 	from PySide.QtGui import QPixmap
 	from PySide.QtCore import QBuffer, QByteArray
 	qtAvailable = True
-
-
-from logger import defaultLogger as log
-
-class ErrorReply(object):
-	def __init__(self, code, headers={}, msg=''):
-		self.__headers = headers
-		self.__code = code
-		self.msg = msg
-
-	def info(self):
-		return self.__headers
-
-	def read(self):
-		return None
-
-
-def urlopen_nt(req):
-	code = -1
-	rep = None
-	try:
-		rep = urllib2.urlopen(req)
-	except urllib2.HTTPError as e:
-		code = e.code
-		rep = ErrorReply(code, e.headers, e.msg)
-	except urllib2.URLError as e:
-		raise CollectionSyncError('unable to reach collection: %s'%e.reason)
-
-	if (code == -1): code = rep.getcode()
-	return code, rep
 
 
 class InvalidToken(CollectionSyncError):
