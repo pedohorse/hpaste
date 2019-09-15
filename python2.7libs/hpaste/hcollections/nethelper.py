@@ -1,6 +1,6 @@
 import urllib2
 import collectionbase
-
+from logger import defaultLogger as log
 
 class ErrorReply(object):
 	def __init__(self, code, headers=None, msg=''):
@@ -33,7 +33,7 @@ def urlopen_nt(req, fallback_cert=0):
 			elif fallback_cert == 1:
 				import ssl
 				rep = urllib2.urlopen(req, context=ssl._create_unverified_context())
-				print "WARNING: connected with unverified context"
+				log("connected with unverified context", 2)
 			else:
 				raise collectionbase.CollectionSyncError('unable to reach collection: %s' % e.reason)
 		except urllib2.URLError as e1:
