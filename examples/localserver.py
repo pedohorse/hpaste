@@ -11,7 +11,7 @@ from ..webclipboardbase import WebClipBoardBase
 class LocalServer(WebClipBoardBase):
 	def __init__(self):
 		#in simple case - you can just put here your local temp path, and everything else should work by itself
-		self.__basePath='Z:\tmp\selfCleaningFolder\"
+		self.__basePath='Z:\tmp\selfCleaningFolder'
 
 	@classmethod
 	def speedClass(self):

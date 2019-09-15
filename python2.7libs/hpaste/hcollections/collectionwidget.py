@@ -2,7 +2,7 @@ if(__name__=='__main__'):
 	import os
 	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
 
-from logger import defaultLogger as log
+from ..logger import defaultLogger as log
 
 try:
 	from PySide2.QtCore import *
@@ -514,8 +514,7 @@ if(__name__=='__main__'):
 			item.invalidate()
 
 	import sys
-	from os import path
-	from githubcollection import GithubCollection
+
 	QCoreApplication.addLibraryPath(r'C:\Program Files\Side Effects Software\Houdini 16.0.600\bin\Qt_plugins')
 	qapp=QApplication(sys.argv)
 

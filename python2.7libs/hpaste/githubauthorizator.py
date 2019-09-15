@@ -5,6 +5,7 @@ import base64
 import socket
 import hou
 
+from nethelper import urlopen_nt
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 try:
 	from PySide2.QtWidgets import  QMessageBox, QInputDialog
@@ -24,20 +25,6 @@ class GithubAuthorizator(object):
 	defaultfilename=os.path.normpath(os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_githubcollection'))
 	#TODO: 2 factor authorization needs to be implemented !!
 	__callbacks = []
-
-	@classmethod
-	def urlopen_nt(cls, req):
-		code = -1
-		rep = None
-		try:
-			rep = urllib2.urlopen(req)
-		except urllib2.HTTPError as e:
-			code = e.code
-		except urllib2.URLError as e:
-			raise RuntimeError('unable to reach github: %s' % e.reason)
-
-		if (code == -1): code = rep.getcode()
-		return code, rep
 
 	@classmethod
 	def readAuthorizationsFile(cls):
@@ -145,7 +132,7 @@ class GithubAuthorizator(object):
 				headers={'User-Agent': 'HPaste', 'Authorization': 'Basic %s' % base64.b64encode('%s:%s' % (username, password)), 'Accept': 'application/vnd.github.v3+json'}
 				postdata={ 'scopes' : ['gist'], 'note' : 'HPaste Collection Access at %s, %s'%(socket.gethostname(), ''.join(random.choice(string.ascii_letters) for _ in xrange(6))) }
 				req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
-				code, rep = cls.urlopen_nt(req)
+				code, rep = urlopen_nt(req)
 
 				if(code == 201):
 					repdata=json.loads(rep.read())
@@ -277,7 +264,7 @@ class GithubAuthorizator(object):
 		#TODO: probably make a dedicatid class
 		headers = {'User-Agent': 'HPaste', 'Authorization': 'Token %s' % auth['token'], 'Accept': 'application/vnd.github.v3+json'}
 		req = urllib2.Request(r'https://api.github.com/user', headers=headers)
-		code, rep = cls.urlopen_nt(req)
+		code, rep = urlopen_nt(req)
 
 		return code == 200
 
