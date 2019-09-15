@@ -5,7 +5,7 @@ import base64
 import socket
 import hou
 
-from hcollections.nethelper import urlopen_nt
+from nethelper import urlopen_nt
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 try:
 	from PySide2.QtWidgets import  QMessageBox, QInputDialog

@@ -13,7 +13,7 @@ from hcollections.collectionbase import CollectionSyncError,CollectionItem
 from hcollections.githubcollection import GithubCollection
 from hcollections.QDoubleInputDialog import QDoubleInputDialog
 
-from hcollections.logger import defaultLogger as log
+from logger import defaultLogger as log
 
 import urllib2 #just for exception catching
 

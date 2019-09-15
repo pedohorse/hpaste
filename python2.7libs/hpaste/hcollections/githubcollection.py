@@ -5,9 +5,10 @@ import copy
 import re
 import base64
 
-from nethelper import urlopen_nt, ErrorReply
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError,CollectionItemReadonlyError,CollectionReadonlyError
-from logger import defaultLogger as log
+from ..nethelper import urlopen_nt
+from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError, \
+	CollectionReadonlyError
+from ..logger import defaultLogger as log
 
 currentVersion = (1, 1)
 
@@ -76,7 +77,10 @@ class GithubCollection(CollectionBase):
 	def _rescanName(self):
 		if(self.__readonly):return
 		req=urllib2.Request(r'https://api.github.com/user',headers=self.__headers)
-		code,rep=urlopen_nt(req)
+		try:
+			code, rep=urlopen_nt(req)
+		except urllib2.URLError as e:
+			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 200):
 			if(code==403):raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
@@ -94,7 +98,10 @@ class GithubCollection(CollectionBase):
 		pagenum = 0
 		while True:
 			req=urllib2.Request(requrl,headers=self.__headers)
-			code, rep = urlopen_nt(req)
+			try:
+				code, rep = urlopen_nt(req)
+			except urllib2.URLError as e:
+				raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 
 			repheaders = rep.info()
 			log(str(repheaders), 0)
@@ -195,7 +202,10 @@ class GithubCollection(CollectionBase):
 							data = globalIconCacher[url]
 						else:
 							req = urllib2.Request(url, headers=self.__headers)
-							code, rep = urlopen_nt(req)
+							try:
+								code, rep = urlopen_nt(req)
+							except urllib2.URLError as e:
+								raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 							if (code != 200):
 								if code == 403: raise InvalidToken('github auth failed')
 								raise CollectionSyncError("unexpected server return level %d" % code)
@@ -233,7 +243,10 @@ class GithubCollection(CollectionBase):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 
 		req=urllib2.Request(item.metadata()['raw_url'],headers=self.__headers)
-		code, rep = urlopen_nt(req)
+		try:
+			code, rep = urlopen_nt(req)
+		except urllib2.URLError as e:
+			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if(code!=200):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
@@ -260,7 +273,10 @@ class GithubCollection(CollectionBase):
 
 				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
-				code, rep = urlopen_nt(req)
+				try:
+					code, rep = urlopen_nt(req)
+				except urllib2.URLError as e:
+					raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 				if (code != 200):
 					if (code == 403): raise InvalidToken('github auth failed')
 					raise CollectionSyncError("unexpected server return level %d" % code)
@@ -306,7 +322,10 @@ class GithubCollection(CollectionBase):
 				data = {'files':{item.metadata()['iconfullname']:{'content':item.metadata()['icondata']}}}
 				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
-				code, rep = urlopen_nt(req)
+				try:
+					code, rep = urlopen_nt(req)
+				except urllib2.URLError as e:
+					raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 				if (code != 200):
 					if (code == 403): raise InvalidToken('github auth failed')
 					raise CollectionSyncError("unexpected server return level %d" % code)
@@ -353,7 +372,10 @@ class GithubCollection(CollectionBase):
 		if proceed:
 			req=urllib2.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
 			req.get_method=lambda : 'PATCH'
-			code, rep = urlopen_nt(req)
+			try:
+				code, rep = urlopen_nt(req)
+			except urllib2.URLError as e:
+				raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 			if (code != 200):
 				if (code == 403): raise InvalidToken('github auth failed')
 				raise CollectionSyncError("unexpected server return level %d" % code)
@@ -393,7 +415,10 @@ class GithubCollection(CollectionBase):
 						data = {'files':{item.metadata()['iconfullname']:None}}
 						req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data), headers=self.__headers)
 						req.get_method = lambda: 'PATCH'
-						code, rep = urlopen_nt(req)
+						try:
+							code, rep = urlopen_nt(req)
+						except urllib2.URLError as e:
+							raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 						if (code != 200):
 							if (code == 403): raise InvalidToken('github auth failed')
 							raise CollectionSyncError("unexpected server return level %d" % code)
@@ -418,7 +443,10 @@ class GithubCollection(CollectionBase):
 					data['files'][newiconname]={'content':imagedata}
 					req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
 					req.get_method = lambda: 'PATCH'
-					code, rep = urlopen_nt(req)
+					try:
+						code, rep = urlopen_nt(req)
+					except urllib2.URLError as e:
+						raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 					if (code != 200):
 						if (code == 403): raise InvalidToken('github auth failed')
 						raise CollectionSyncError("unexpected server return level %d" % code)
@@ -454,7 +482,10 @@ class GithubCollection(CollectionBase):
 		postdata['files']['ver:%s' % '.'.join(map(lambda x:str(x), currentVersion))] = {'content':'==='}
 
 		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
-		code, rep = urlopen_nt(req)
+		try:
+			code, rep = urlopen_nt(req)
+		except urllib2.URLError as e:
+			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 201):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
@@ -490,7 +521,10 @@ class GithubCollection(CollectionBase):
 
 		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
 		req.get_method=lambda : 'DELETE'
-		code, rep = urlopen_nt(req)
+		try:
+			code, rep = urlopen_nt(req)
+		except urllib2.URLError as e:
+			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 204):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
