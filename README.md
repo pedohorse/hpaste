@@ -12,6 +12,9 @@ You can read a bit more about it in here:
 * https://cgallin.blogspot.com/2018/01/hcollections.html
 
 ## installation ##
+### Dependancies
+this plugin is built to only use standard system modules and standard houdini modules.
+**HOWEVER** in some cases (like houdini 17.5 linux version) you might run into **SSL error** due to certificated being out of date. In this case you **should** install certifi module to still properly secure your connection. This can be done as simple as **pip install certifi** on linux, windows or mac
 ### Super short and simple variant ###
 1. Download the contents of this repository as ZIP
 2. Unzip it into your Houdini user folder, something like C:\Users\\<**USER>**\Documents\houdini16.5\
