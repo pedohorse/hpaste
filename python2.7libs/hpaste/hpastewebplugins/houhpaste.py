@@ -28,6 +28,7 @@ class HPaste(WebClipBoardBase):
 			except ImportError:
 				import ssl
 				rep = urllib2.urlopen(url, timeout=timeout, context=ssl._create_unverified_context())
+				print "WARNING: connected with unverified context"
 		return rep
 
 	def webPackData(self, s):
