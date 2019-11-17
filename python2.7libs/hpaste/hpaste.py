@@ -20,6 +20,16 @@ except:
 from pprint import pprint
 
 
+class InvalidContextError(RuntimeError):
+	def __init__(self, necontext, snippetcontext):
+		super(InvalidContextError, self).__init__("this snippet has '%s' context" % snippetcontext)
+		self.__necontext = necontext
+		self.__snippetcontext = snippetcontext
+
+	def contexts(self):
+		return (self.__necontext, self.__snippetcontext)
+
+
 def orderSelected():
 	return orderNodes(hou.selectedNodes())
 
@@ -159,7 +169,7 @@ def nodesToString(nodes, transfer_assets = None):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None, override_network_position = None):
+def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None):
 	'''
 	TODO: here to be a docstring
 	:param s:
@@ -219,7 +229,8 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 
 	# check context
 	context = getChildContext(hou_parent,houver1)
-	if (context != data['context']): raise RuntimeError("this snippet has '%s' context" % data['context'])
+	if context != data['context']:
+		raise InvalidContextError(context, data['context'])  # RuntimeError("this snippet has '%s' context" % data['context'])
 
 	# check sum
 	code = data['code']
