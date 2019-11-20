@@ -20,6 +20,20 @@ except:
 from pprint import pprint
 
 
+class InvalidContextError(RuntimeError):
+	def __init__(self, parent_node, snippetcontext):
+		super(InvalidContextError, self).__init__("this snippet has '%s' context" % snippetcontext)
+		self.__necontext = getChildContext(parent_node, hou.applicationVersion())
+		self.__snippetcontext = snippetcontext
+		self.__node = parent_node
+
+	def contexts(self):
+		return self.__necontext, self.__snippetcontext
+
+	def node(self):
+		return self.__node
+
+
 def orderSelected():
 	return orderNodes(hou.selectedNodes())
 
@@ -159,7 +173,7 @@ def nodesToString(nodes, transfer_assets = None):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_defined = None, force_prefer_hdas = None, override_network_position = None):
+def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None):
 	'''
 	TODO: here to be a docstring
 	:param s:
@@ -192,7 +206,10 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 	if (hou_parent is None):
 		if(ne is None):
 			nes = [x for x in hou.ui.paneTabs() if x.type() == hou.paneTabType.NetworkEditor and getChildContext(x.pwd(), houver1) == data['context']]
-			if (len(nes)==0): raise RuntimeError("this snippet has '{0}' context. cannot find opened network editor with context '{0}' to paste in".format(data['context']))
+			if len(nes) == 0:
+				nes = [x for x in hou.ui.paneTabs() if x.type() == hou.paneTabType.NetworkEditor]
+				if len(nes) == 0:
+					raise RuntimeError("this snippet has '{0}' context. cannot find opened network editor with context '{0}' to paste in".format(data['context']))
 			ne = nes[0]
 		hou_parent = ne.pwd()
 
@@ -219,7 +236,8 @@ def stringToNodes(s, hou_parent = None, ne = None, ignore_hdas_if_already_define
 
 	# check context
 	context = getChildContext(hou_parent,houver1)
-	if (context != data['context']): raise RuntimeError("this snippet has '%s' context" % data['context'])
+	if context != data['context']:
+		raise InvalidContextError(hou_parent, data['context'])  # RuntimeError("this snippet has '%s' context" % data['context'])
 
 	# check sum
 	code = data['code']

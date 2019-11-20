@@ -54,11 +54,22 @@ except:
 import hpaste
 import hpaste.hpasteoptions as opt
 
-def do():
+def do(pane):
     s=qt.qApp.clipboard().text()
     
     try:
-        hpaste.stringToNodes(s)
+        hpaste.stringToNodes(s, ne=pane)
+    except hpaste.InvalidContextError as e:
+        nec, snc = e.contexts()
+        if snc == 'Sop' and nec == 'Object':
+            if hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
+                geonode = e.node().createNode('geo')
+                if pane is not None:
+                    geonode.setPosition(pane.cursorPosition())
+                hpaste.stringToNodes(s, hou_parent=geonode)
+        else:
+            hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+            return
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
@@ -68,7 +79,8 @@ def do():
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
 
-do()]]></script>
+do(kwargs['pane'])
+]]></script>
   </tool>
 
   <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
@@ -134,7 +146,18 @@ def do(pane=None):
         qt.qApp.restoreOverrideCursor()
         
     try:
-        hpaste.stringToNodes(s,ne=pane)
+        hpaste.stringToNodes(s, ne=pane)
+    except hpaste.InvalidContextError as e:
+        nec, snc = e.contexts()
+        if snc == 'Sop' and nec == 'Object':
+            if hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
+                geonode = e.node().createNode('geo')
+                if pane is not None:
+                    geonode.setPosition(pane.cursorPosition())
+                hpaste.stringToNodes(s, hou_parent=geonode)
+        else:
+            hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
+            return
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
@@ -165,7 +188,6 @@ except ImportError:
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget
 
 
-#print(kwargs)
 def do(kwargs):
     pane=kwargs['pane']
     if(pane is None or not isinstance(pane,hou.NetworkEditor)):
