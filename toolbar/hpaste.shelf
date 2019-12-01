@@ -17,13 +17,14 @@
 
   <tool name="hcopy" label="HCopy" icon="copy.svg">
     <script scriptType="python"><![CDATA[try:
-    from PySide2 import QtWidgets as qt
+    from PySide2.QtWidgets import QApplication
 except:
-    from PySide import QtGui as qt
+    from PySide.QtGui import QApplication
 
 import hpaste
 
 def do():
+    qapp = QApplication.instance()
     try:
         nodes=hou.selectedItems()
     except:
@@ -40,22 +41,23 @@ def do():
         return
     
     
-    qt.qApp.clipboard().setText(s)
+    qapp.clipboard().setText(s)
     
 do()]]></script>
   </tool>
 
   <tool name="hpaste" label="HPaste" icon="paste.svg">
     <script scriptType="python"><![CDATA[try:
-    from PySide2 import QtWidgets as qt
+    from PySide2.QtWidgets import QApplication
 except:
-    from PySide import QtGui as qt
+    from PySide.QtGui import QApplication
 
 import hpaste
 import hpaste.hpasteoptions as opt
 
 def do(pane):
-    s=qt.qApp.clipboard().text()
+    qapp = QApplication.instance()
+    s=qapp.clipboard().text()
     
     try:
         hpaste.stringToNodes(s, ne=pane)
@@ -85,15 +87,16 @@ do(kwargs['pane'])
 
   <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
     <script scriptType="python"><![CDATA[try:
-    from PySide2 import QtWidgets as qt
+    from PySide2.QtWidgets import QApplication
     from PySide2 import QtCore as qtc
 except:
-    from PySide import QtGui as qt
+    from PySide.QtGui import QApplication
     from PySide import QtCore as qtc
     
 import hpaste
 
 def do():
+    qapp = QApplication.instance()
     try:
         nodes=hou.selectedItems()
     except:
@@ -109,16 +112,16 @@ def do():
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
     
-    qt.qApp.setOverrideCursor(qtc.Qt.WaitCursor);
+    qapp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webPack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
     finally:
-        qt.qApp.restoreOverrideCursor()
+        qapp.restoreOverrideCursor()
     
-    qt.qApp.clipboard().setText(s)
+    qapp.clipboard().setText(s)
     hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
 
 do()]]></script>
@@ -126,24 +129,25 @@ do()]]></script>
 
   <tool name="hpasteweb" label="HPasteWeb" icon="cloud-download.svg">
     <script scriptType="python"><![CDATA[try:
-    from PySide2 import QtWidgets as qt
+    from PySide2.QtWidgets import QApplication
     from PySide2 import QtCore as qtc
 except:
-    from PySide import QtGui as qt
+    from PySide.QtGui import QApplication
     from PySide import QtCore as qtc
     
 import hpaste
 
 def do(pane=None):
-    s=qt.qApp.clipboard().text()
-    qt.qApp.setOverrideCursor(qtc.Qt.WaitCursor);
+    qapp = QApplication.instance()
+    s=qapp.clipboard().text()
+    qapp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webUnpack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
     finally:
-        qt.qApp.restoreOverrideCursor()
+        qapp.restoreOverrideCursor()
         
     try:
         hpaste.stringToNodes(s, ne=pane)
@@ -176,24 +180,22 @@ do(kwargs['pane'])
   <tool name="hpastecollection" label="Collection" icon="cloud-networking-svgrepo-com">
     <script scriptType="python"><![CDATA[try:
     from PySide2.QtGui import QCursor
-    from PySide2.QtWidgets import QInputDialog, qApp
+    from PySide2.QtWidgets import QInputDialog, QApplication
     from PySide2.QtCore import Qt
 except ImportError:
-    from PySide.QtGui import QCursor, QInputDialog, qApp
+    from PySide.QtGui import QCursor, QInputDialog, QApplication
     from PySide.QtCore import Qt
 
-#import hpaste.hpastecollectionwidget
-#reload(hpaste.hpastecollectionwidget)
-#from hpaste import getChildContext
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget
 
 
 def do(kwargs):
+    qapp = QApplication.instance()
     pane=kwargs['pane']
     if(pane is None or not isinstance(pane,hou.NetworkEditor)):
         return
     
-    qApp.setOverrideCursor(Qt.WaitCursor)
+    qapp.setOverrideCursor(Qt.WaitCursor)
     try:
         mainwindow=hou.qt.mainWindow()
     except:
@@ -202,7 +204,7 @@ def do(kwargs):
     try:
         wid=HPasteCollectionWidget(mainwindow)
     finally:
-        qApp.restoreOverrideCursor()
+        qapp.restoreOverrideCursor()
     
     wid.move(QCursor.pos())
     wid.setNetworkEditor(pane)
