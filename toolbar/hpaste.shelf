@@ -24,7 +24,6 @@ except:
 import hpaste
 
 def do():
-    qapp = QApplication.instance()
     try:
         nodes=hou.selectedItems()
     except:
@@ -39,9 +38,12 @@ def do():
     except Exception as e:
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
-    
-    
-    qapp.clipboard().setText(s)
+
+    if hou.applicationVersion()[0] > 15:
+        hou.ui.copyTextToClipboard(s)
+    else:
+        qapp = QApplication.instance()
+        qapp.clipboard().setText(s)
     
 do()]]></script>
   </tool>
@@ -56,8 +58,11 @@ import hpaste
 import hpaste.hpasteoptions as opt
 
 def do(pane):
-    qapp = QApplication.instance()
-    s=qapp.clipboard().text()
+    if hou.applicationVersion()[0] > 15:
+        s = hou.ui.getTextFromClipboard()
+    else:
+        qapp = QApplication.instance()
+        s = qapp.clipboard().text()
     
     try:
         hpaste.stringToNodes(s, ne=pane)
@@ -111,17 +116,22 @@ def do():
     except Exception as e:
         hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
         return
-    
-    qapp.setOverrideCursor(qtc.Qt.WaitCursor);
+
+    if isinstance(qapp, QApplication):
+        qapp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webPack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
     finally:
-        qapp.restoreOverrideCursor()
-    
-    qapp.clipboard().setText(s)
+        if isinstance(qapp, QApplication):
+            qapp.restoreOverrideCursor()
+
+    if hou.applicationVersion()[0] > 15:
+        hou.ui.copyTextToClipboard(s)
+    else:
+        qapp.clipboard().setText(s)
     hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
 
 do()]]></script>
@@ -139,15 +149,21 @@ import hpaste
 
 def do(pane=None):
     qapp = QApplication.instance()
-    s=qapp.clipboard().text()
-    qapp.setOverrideCursor(qtc.Qt.WaitCursor);
+    if hou.applicationVersion()[0] > 15:
+        s = hou.ui.getTextFromClipboard()
+    else:
+        s=qapp.clipboard().text()
+
+    if isinstance(qapp, QApplication):
+        qapp.setOverrideCursor(qtc.Qt.WaitCursor);
     try:
         s=hpaste.webUnpack(s)
     except Exception as e:
         hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
         return
     finally:
-        qapp.restoreOverrideCursor()
+        if isinstance(qapp, QApplication):
+            qapp.restoreOverrideCursor()
         
     try:
         hpaste.stringToNodes(s, ne=pane)
@@ -194,8 +210,9 @@ def do(kwargs):
     pane=kwargs['pane']
     if(pane is None or not isinstance(pane,hou.NetworkEditor)):
         return
-    
-    qapp.setOverrideCursor(Qt.WaitCursor)
+
+    if isinstance(qapp, QApplication):
+        qapp.setOverrideCursor(Qt.WaitCursor)
     try:
         mainwindow=hou.qt.mainWindow()
     except:
@@ -204,7 +221,8 @@ def do(kwargs):
     try:
         wid=HPasteCollectionWidget(mainwindow)
     finally:
-        qapp.restoreOverrideCursor()
+        if isinstance(qapp, QApplication):
+            qapp.restoreOverrideCursor()
     
     wid.move(QCursor.pos())
     wid.setNetworkEditor(pane)
