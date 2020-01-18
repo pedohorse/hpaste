@@ -6,7 +6,7 @@ for simple and fast exchange of node packs through any messenger
 **Hpaste** works/tested for **Houdini 18.0, 17.5, 17.0, 16.5, 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
 **HCollections** should work in **Houdini 18.0, 17.x, 16.x, 15.5** with both Qt4 and Qt5
 
-**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 352**
+**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 353**
 
 You can read a bit more about it in here:
 * https://cgallin.blogspot.com/2017/09/hpaste.html
