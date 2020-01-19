@@ -13,6 +13,8 @@ You can read a bit more about it in here:
 * https://cgallin.blogspot.com/2018/02/hpaste-update.html
 * https://cgallin.blogspot.com/2018/01/hcollections.html
 
+**Support** this project (and others): https://www.patreon.com/xapkohheh
+
 ## installation ##
 ### Dependencies
 this plugin is built to only use standard system modules and standard houdini modules.
