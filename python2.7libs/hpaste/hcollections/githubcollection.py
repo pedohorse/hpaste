@@ -294,6 +294,7 @@ class GithubCollection(CollectionBase):
 				item._name = newname
 				item._meta['raw_url'] = gist['files'][newfilename]['raw_url']
 				item._meta['nettype'] = nettype
+				item._meta['ver'] = list(currentVersion)
 				item._id = '%s@%s' % (gist['id'], newfilename)
 				item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
 				item._readonly = False
@@ -503,6 +504,8 @@ class GithubCollection(CollectionBase):
 			newname = newfilename.split(':',1)[1]
 
 		if metadata is None: metadata={}
+		if 'ver' not in metadata:
+			metadata['ver'] = list(currentVersion)
 		metadata['raw_url'] = gist['files'][newfilename]['raw_url']
 		desc = gist['description']
 		nettype = ''
