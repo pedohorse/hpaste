@@ -17,6 +17,7 @@ class ErrorReply(object):
 
 
 def urlopen_nt(req, fallback_cert=0):
+	# type: (urllib2.Request, int) -> None
 	"""
 	wrapper around urllib2.urlopen that does not throw HTTPError
 	and does some additional things like falling back on SSL certs
@@ -26,6 +27,7 @@ def urlopen_nt(req, fallback_cert=0):
 	"""
 	code = -1
 	rep = None
+	# print req.get_full_url(), req.get_data(), fallback_cert
 	try:
 		if fallback_cert == 0:
 			rep = urllib2.urlopen(req)
