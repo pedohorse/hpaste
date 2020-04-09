@@ -449,24 +449,24 @@ class CollectionWidget(QDropdownWidget):
 	def _itemContextMenu(self, index, sidemenu):
 		item = index.internalPointer()
 		newaction = sidemenu.addAction('info')
-		newaction.triggered.connect(lambda x=index: self._itemInfo(x))
+		newaction.triggered.connect(lambda checked=False, x=index: self._itemInfo(x))
 		if (not item.readonly()):
 			sidemenu.addSeparator()
 			newaction = sidemenu.addAction('rename')
-			newaction.triggered.connect(lambda x=index: self._renameItem(x))
+			newaction.triggered.connect(lambda checked=False, x=index: self._renameItem(x))
 			newaction = sidemenu.addAction('change access')
-			newaction.triggered.connect(lambda x=index: self._changeAccess(x))
+			newaction.triggered.connect(lambda checked=False, x=index: self._changeAccess(x))
 			newaction = sidemenu.addAction('replace content')
-			newaction.triggered.connect(lambda x=index: self._replaceContent(x))
+			newaction.triggered.connect(lambda checked=False, x=index: self._replaceContent(x))
 			newaction = sidemenu.addAction('upload icon')
-			newaction.triggered.connect(lambda x=index: self._uploadIcon(x))
+			newaction.triggered.connect(lambda checked=False, x=index: self._uploadIcon(x))
 			newaction = sidemenu.addAction('remove icon')
-			newaction.triggered.connect(lambda obj=self, x=index: obj._removeIcon(x))
+			newaction.triggered.connect(lambda checked=False, obj=self, x=index: obj._removeIcon(x))
 			# newaction.setEnabled(False)
 			# TODO: automatically enable stuff if subclass overrides item methods!
 			sidemenu.addSeparator()
 			newaction = sidemenu.addAction('remove item')
-			newaction.triggered.connect(lambda x=index: self.__removeItem(x))
+			newaction.triggered.connect(lambda checked=False, x=index: self.__removeItem(x))
 
 ####Slots
 	@Slot(QPoint)
@@ -484,7 +484,7 @@ class CollectionWidget(QDropdownWidget):
 			else:
 				newaction=colmenu.addAction('add selected nodes')
 				newaction.setData((col))
-				newaction.triggered.connect(lambda x=col: self._addItem(x))
+				newaction.triggered.connect(lambda checked=False, x=col: self._addItem(x))
 		menu.addSeparator()
 
 		if(self.ui.mainView.currentIndex().isValid()):
