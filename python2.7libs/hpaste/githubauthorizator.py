@@ -36,10 +36,11 @@ class GithubAuthorizator(object):
         try:
             with open(filepath, 'r') as f:
                 data = json.load(f)
-            if 'ver' not in data: raise RuntimeError('file is not good')
+            if 'ver' not in data:
+                raise RuntimeError('file is not good')
             dmajor, dminor = map(lambda x: int(x), data['ver'].split('.'))
-            if dmajor != cls.ver[0]: raise RuntimeError(
-                "authorization file's major version incompatible. you will have to delete the file and have it recreated from scratch")
+            if dmajor != cls.ver[0]:
+                raise RuntimeError("authorization file's major version incompatible. you will have to delete the file and have it recreated from scratch")
             if dminor < cls.ver[1]:
                 for ctypename in ('collections', 'publiccollections'):
                     for entry in data[ctypename]:
@@ -69,7 +70,7 @@ class GithubAuthorizator(object):
     def __sendCallbacks(cls, arg):
         for callback in cls.__callbacks:
             try:
-                if (callback[0] is None):
+                if callback[0] is None:
                     callback[1](arg)
                 else:
                     callback[1](callback[0], arg)
@@ -85,7 +86,7 @@ class GithubAuthorizator(object):
         data = cls.readAuthorizationsFile()
         newauth = cls.defaultentry
 
-        if (auth is not None and 'user' in auth and 'token' in auth):
+        if auth is not None and 'user' in auth and 'token' in auth:
             # just write to config and get the hell out
             # or maybe we can test it first...
             oldones = [x for x in data['collections'] if x['user'] == auth['user']]
@@ -99,7 +100,7 @@ class GithubAuthorizator(object):
 
         while True:
             defuser = auth['user'] if auth is not None else ''
-            if (hou.isUIAvailable()):
+            if hou.isUIAvailable():
                 btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d' % code,
                                                                   ('username', 'password'), (1,),
                                                                   buttons=('Ok', 'Cancel'), initial_contents=(defuser,))
@@ -108,18 +109,19 @@ class GithubAuthorizator(object):
                                                                              'github authorization required. code %d' % code,
                                                                              'username', 'password', defuser)
                 btn = 1 - btn
-            if (btn != 0):
-                if (auth is None):
+            if btn != 0:
+                if auth is None:
                     return False
                 else:
-                    if (hou.isUIAvailable()):
+                    if hou.isUIAvailable():
                         btn = hou.ui.displayMessage('Do you want to remove account %s from remembered?' % auth['user'],
                                                     buttons=('Yes', 'No'), close_choice=1)
                     else:
                         btn = QMessageBox.question(altparent, 'question',
                                                    'Do you want to remove account %s from remembered?' % auth['user'])
                         btn = btn == QMessageBox.No
-                    if (btn == 1): return False
+                    if btn == 1:
+                        return False
                     oldones = [x for x in data['collections'] if x['user'] == auth['user']]
                     for old in oldones:
                         data['collections'].remove(old)
@@ -127,7 +129,7 @@ class GithubAuthorizator(object):
                     try:
                         cls.writeAuthorizationFile(data)
                     except:
-                        if (hou.isUIAvailable()):
+                        if hou.isUIAvailable():
                             hou.ui.displayMessage("writing token to file failed!")
                         else:
                             QMessageBox.warning(altparent, 'error', "writing token to file failed!")
@@ -142,12 +144,13 @@ class GithubAuthorizator(object):
                 req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
                 code, rep = urlopen_nt(req)
 
-                if (code == 201):
+                if code == 201:
                     repdata = json.loads(rep.read())
 
                     newauth['token'] = repdata['token']  # TODO: check if reply is as expected
                     newauth['user'] = username
-                    if auth is None: auth = {}
+                    if auth is None:
+                        auth = {}
                     for key in newauth: auth[key] = newauth[key]
                     oldones = [x for x in data['collections'] if x['user'] == username]
                     for old in oldones:
@@ -159,23 +162,23 @@ class GithubAuthorizator(object):
                     try:
                         cls.writeAuthorizationFile(data)
                     except:
-                        if (hou.isUIAvailable()):
+                        if hou.isUIAvailable():
                             hou.ui.displayMessage("writing token to file failed!")
                         else:
                             QMessageBox.warning(altparent, 'error', "writing token to file failed!")
                     return True
-                elif (code == 422):
+                elif code == 422:
                     # postdata was not accepted
                     # so we just make another attempt of creating a token (github requires unique note)
                     pass
-                elif (code == 401):
-                    if (hou.isUIAvailable()):
+                elif code == 401:
+                    if hou.isUIAvailable():
                         hou.ui.displayMessage('wrong username or password')
                     else:
                         QMessageBox.warning(altparent, 'error', 'wrong username or password')
                     break
             else:
-                if (hou.isUIAvailable()):
+                if hou.isUIAvailable():
                     hou.ui.displayMessage(
                         'Could not receive token from github.\nDid you verify your email address?\nAlso please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
                 else:
@@ -187,7 +190,8 @@ class GithubAuthorizator(object):
     def removeAuthorization(cls, username):
         data = GithubAuthorizator.readAuthorizationsFile()
         auths = [x for x in data['collections'] if x['user'] == username]
-        if (len(auths) == 0): return False
+        if len(auths) == 0:
+            return False
 
         data['collections'] = filter(lambda x: x['user'] != username, data['collections'])
         for auth in auths:
@@ -202,8 +206,9 @@ class GithubAuthorizator(object):
     @classmethod
     def newPublicCollection(cls, username=None, altparent=None):
         data = GithubAuthorizator.readAuthorizationsFile()
-        if (username is not None):
-            if (isinstance(username, dict)): username = username['user']
+        if username is not None:
+            if isinstance(username, dict):
+                username = username['user']
             oldones = [x for x in data['publiccollections'] if x['user'] == username]
             for old in oldones:
                 data['publiccollections'].remove(old)
@@ -215,12 +220,13 @@ class GithubAuthorizator(object):
             cls.writeAuthorizationFile(data)
             return True
 
-        if (hou.isUIAvailable()):
+        if hou.isUIAvailable():
             btn, username = hou.ui.readInput('public collection name', buttons=('Ok', 'Cancel'), close_choice=1)
         else:
             username, btn = QInputDialog.getText(altparent, 'enter name', 'public collection name')
             btn = 1 - int(btn)
-        if (btn != 0): return False
+        if btn != 0:
+            return False
         oldones = [x for x in data['publiccollections'] if x['user'] == username]
         data['publiccollections'] = filter(lambda x: x['user'] != username, data['publiccollections'])
         for old in oldones:
@@ -247,7 +253,8 @@ class GithubAuthorizator(object):
         state = bool(state)
         data = GithubAuthorizator.readAuthorizationsFile()
         auths = [x for x in data['collections'] if x['user'] == username]
-        if (len(auths) == 0): return False
+        if len(auths) == 0:
+            return False
         for auth in auths:
             doCallback = auth['enabled'] != state
             auth['enabled'] = state
@@ -260,7 +267,8 @@ class GithubAuthorizator(object):
         state = bool(state)
         data = GithubAuthorizator.readAuthorizationsFile()
         auths = [x for x in data['publiccollections'] if x['user'] == username]
-        if (len(auths) == 0): return False
+        if len(auths) == 0:
+            return False
         for auth in auths:
             doCallback = auth['enabled'] != state
             auth['enabled'] = state
@@ -303,7 +311,8 @@ class GithubAuthorizator(object):
         """
         assert isinstance(callback, tuple) and len(callback) == 2 and callable(
             callback[1]), 'callable must be a tuple of object and a callable method'
-        if (callback in cls.__callbacks): return True
+        if callback in cls.__callbacks:
+            return True
         cls.__callbacks.append(callback)
         return True
 
@@ -316,7 +325,7 @@ class GithubAuthorizator(object):
         """
         assert isinstance(callback, tuple) and len(callback) == 2 and callable(
             callback[1]), 'callable must be a tuple of object and a callable method'
-        if (callback in cls.__callbacks):
+        if callback in cls.__callbacks:
             cls.__callbacks.remove(callback)
             return True
         return False
