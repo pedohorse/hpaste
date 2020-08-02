@@ -25,7 +25,7 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 				packer = cls()
 				chunklen = min(packer.maxStringLength(), len(asciiText))
 				if maxChunkSize is not None:
-					chunklen=min(chunklen,maxChunkSize)
+					chunklen = min(chunklen, maxChunkSize)
 				chunk = asciiText[:chunklen]
 				packid = packer.webPackData(chunk)
 				asciiText = asciiText[chunklen:]
