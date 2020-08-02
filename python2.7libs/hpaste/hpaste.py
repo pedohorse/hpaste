@@ -9,6 +9,9 @@ import binascii
 import base64
 import bz2
 
+from Crypto.Cipher import AES
+from Crypto import Random as CRandom
+
 import tempfile
 
 opt = None
@@ -69,7 +72,36 @@ def getChildContext(node, houver):
 		raise RuntimeError("unsupported houdini version!")
 
 
-def nodesToString(nodes, transfer_assets=None):
+def getSerializer(enctype=None, **kwargs):
+	rng = CRandom.new()
+	if enctype == 'AES':
+		key = kwargs['key']
+		mode = kwargs.get('mode', AES.MODE_CBC)
+		iv = kwargs.get('iv', rng.read(AES.block_size))
+
+		def _ser(x):
+			enc = AES.new(key, mode, iv)
+			return base64.b64encode(enc.encrypt(x))
+		return {'iv': iv, 'mode': mode}, _ser
+	else:
+		return None, lambda x: base64.b64encode(x)
+
+
+def getDeserializer(enctype=None, **kwargs):
+	if enctype == 'AES':
+		key = kwargs['key']
+		mode = kwargs['mode']
+		iv = kwargs['iv']
+
+		def _deser(x):
+			enc = AES.new(key, mode, iv)
+			return enc.decrypt(base64.b64decode(x))
+		return _deser
+	else:
+		return lambda x: base64.b64decode(x)
+
+
+def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 	"""
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -79,6 +111,8 @@ def nodesToString(nodes, transfer_assets=None):
 	:param transfer_assets:
 	:return:
 	"""
+
+	enc_data, serialize = getSerializer(encryption_type, **kwargs)
 
 	if transfer_assets is None:
 		transfer_assets = True
@@ -136,7 +170,7 @@ def nodesToString(nodes, transfer_assets=None):
 						definition.copyToHDAFile(temppath)
 						with open(temppath, 'rb') as f:
 							hdacode = f.read()
-						hdaList.append({'type': node.type().name(), 'category': node.type().category().name(), 'code': base64.b64encode(hdacode)})
+						hdaList.append({'type': node.type().name(), 'category': node.type().category().name(), 'code': serialize(hdacode)})
 					finally:
 						os.close(fd)
 
@@ -154,24 +188,26 @@ def nodesToString(nodes, transfer_assets=None):
 		finally:
 			os.close(fd)
 	# THIS WAS IN FORMAT VERSION 1 code = binascii.b2a_qp(code)
-	code = base64.b64encode(code)
+	code = serialize(code)
 	# pprint(code)
 
 	data = {}
 	data['algtype'] = algtype
 	data['version'] = 2
-	data['version.minor'] = 1
+	data['version.minor'] = 2
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
 	data['hdaList'] = hdaList
 	data['chsum'] = hashlib.sha1(code).hexdigest()
-	#security entries, for future
+	# security entries, for future
 	data['author'] = 'unknown'
-	data['encrypted'] = False
-	data['encryptionType'] = ''
+	data['encrypted'] = encryption_type is not None
+	data['encryptionType'] = encryption_type
+	data['encryptionData'] = enc_data
 	data['signed'] = False
 	data['signatureType'] = ''
+	data['signatureData'] = None
 	# these suppose there is a trusted vendors list with their public keys stored
 
 	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data)))
@@ -179,7 +215,7 @@ def nodesToString(nodes, transfer_assets=None):
 	return stringdata
 
 
-def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None):
+def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None, key=None):
 	"""
 	TODO: here to be a docstring
 	:param s:
@@ -223,6 +259,8 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 	formatVersion = data['version']
 	if formatVersion > 2:
 		raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
+	if data['version.minor'] > 2:
+		print('HPaste: Warning!! snippet has later format version than hpaste. Consider updating hpaste to the latest version')
 
 	# check accepted algtypes
 	supportedAlgs = set()
@@ -259,9 +297,11 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 		else:
 			olditems = hou_parent.children()
 
+	deserialize = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+
 	# do the work
 	for hdaitem in data.get('hdaList', []):  # added in version 2.1
-		hdacode = base64.b64decode(hdaitem['code'])
+		hdacode = deserialize(hdaitem['code'])
 		ntype = hdaitem['type']
 		ncategory = hdaitem['category']
 		if ignore_hdas_if_already_defined:
@@ -289,7 +329,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 	if formatVersion == 1:
 		code = binascii.a2b_qp(code)
 	elif formatVersion >= 2:
-		code = base64.b64decode(code)
+		code = deserialize(code)
 	else:
 		raise RuntimeError("Very unexpected format version in a very inexpected place!")
 
