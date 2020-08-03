@@ -318,7 +318,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 
 	# check hou version
 	houver2 = data['houver']
-	if houver1[0] != houver2[0] or houver1[1] != houver2[1]:
+	if not opt.getOption('hpaste.ignore_houversion_warning', False) and (houver1[0] != houver2[0] or houver1[1] != houver2[1]):
 		print("HPaste: WARNING!! nodes were copied from a different houdini version: " + str(houver2))
 
 	# check context
