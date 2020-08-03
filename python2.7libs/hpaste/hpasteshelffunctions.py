@@ -15,6 +15,7 @@ from .hpasteweb import webPack, webUnpack
 
 from . import hpasteoptions
 
+
 def hcopyweb():
     qapp = QApplication.instance()
     try:
@@ -22,13 +23,16 @@ def hcopyweb():
     except:
         nodes = hou.selectedNodes()
 
-    enctype = hpasteoptions.getOption('hpasteweb.encryption_type', '')
+    enctype = hpasteoptions.getOption('hpasteweb.encryption_type', 'None')
     key = None
     encparms = {}
     if enctype == 'AES-CBC':
         key = ''.join([random.choice(string.ascii_letters + string.digits) for x in xrange(AES.block_size)])
         encparms = {'mode': AES.MODE_CBC}
         enctype = 'AES'
+    elif enctype.lower() == 'none' or enctype == '':
+        enctype = None
+
     if enctype is not None and key is None:
         print('Warning: unknown encryption method, disabling encryption')
         enctype = None
