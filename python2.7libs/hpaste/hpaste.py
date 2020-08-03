@@ -373,6 +373,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 	else:
 		raise RuntimeError("Very unexpected format version in a very unexpected place!")
 
+	load_warnings = []
 	if algtype == 0:
 		# high security risk!!
 		if hou.isUiAvailable():
@@ -411,7 +412,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 				if len(msg) > 253:
 					msgtrunc = True
 					msg = msg[:253] + "..."
-				raise RuntimeWarning("There were warnings during load" + ("(see console for full message)" if msgtrunc else "") + "\n" + msg)
+				load_warnings.append("There were warnings during load" + ("(see console for full message)" if msgtrunc else "") + "\n" + msg)
 		finally:
 			os.close(fd)
 	else:
@@ -451,3 +452,6 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 			if houver1[0] >= 16 and item.parentNetworkBox() in newitems:
 				continue
 			item.move(offset)
+
+	if len(load_warnings) > 0:
+		raise RuntimeWarning('snippet loaded with following warnings:\n' + '\n'.join(load_warnings))
