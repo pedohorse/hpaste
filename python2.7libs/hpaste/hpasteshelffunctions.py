@@ -10,7 +10,7 @@ except:
     from PySide.QtGui import QApplication
     from PySide import QtCore as qtc
 
-from .hpaste import stringToNodes, nodesToString, InvalidContextError
+from .hpaste import stringToNodes, nodesToString, InvalidContextError, WrongKeyLengthError, WrongKeyError, NoKeyError
 from .hpasteweb import webPack, webUnpack
 
 from . import hpasteoptions
@@ -105,6 +105,15 @@ def hpasteweb(pane=None):
         else:
             hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
             return
+    except WrongKeyLengthError as e:
+        hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e.message), severity=hou.severityType.Error)
+        return
+    except NoKeyError as e:
+        hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e.message), severity=hou.severityType.Error)
+        return
+    except WrongKeyError as e:
+        hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e.message), severity=hou.severityType.Error)
+        return
     except RuntimeError as e:
         hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
         return
