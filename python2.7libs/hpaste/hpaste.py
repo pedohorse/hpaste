@@ -86,6 +86,7 @@ def getSerializer(enctype=None, **kwargs):
 		key = kwargs['key']
 		mode = kwargs.get('mode', AES.MODE_CBC)
 		iv = kwargs.get('iv', rng.read(AES.block_size))
+		magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 
 		def _ser(x):
 			enc = AES.new(key, mode, iv)
@@ -93,7 +94,6 @@ def getSerializer(enctype=None, **kwargs):
 			xbytes = ''.join((struct.pack('>Q', xsize), x))
 			rng = CRandom.new()
 			pad = rng.read(AES.block_size - len(xbytes) % AES.block_size)
-			magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 			return base64.b64encode(enc.encrypt(''.join((xbytes, pad, magic_footer))))
 
 		return {'iv': base64.b64encode(iv), 'mode': mode}, _ser
@@ -108,12 +108,12 @@ def getDeserializer(enctype=None, **kwargs):
 			raise NoKeyError('no decryption key provided for encryption type AES')
 		mode = kwargs['mode']
 		iv = base64.b64decode(kwargs['iv'])
+		magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 
 		def _deser(x):
 			enc = AES.new(key, mode, iv)
 			xbytes = enc.decrypt(base64.b64decode(x))
 			xsize = struct.unpack('>Q', xbytes[:8])[0]
-			magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 			print xsize < 0, xsize > len(xbytes), len(xbytes) - xsize - 8 > 2 * AES.block_size, xbytes[-AES.block_size:], magic_footer
 			if xsize < 0 or xsize > len(xbytes) or len(xbytes) - xsize - 8 > 2 * AES.block_size or xbytes[-AES.block_size:] != magic_footer:
 				raise WrongKeyError('seems that provided decryption key is wrong')
