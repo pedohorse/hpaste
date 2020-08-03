@@ -11,6 +11,7 @@ import bz2
 
 from Crypto.Cipher import AES
 from Crypto import Random as CRandom
+import struct
 
 import tempfile
 
@@ -36,6 +37,13 @@ class InvalidContextError(RuntimeError):
 	def node(self):
 		return self.__node
 
+
+class WrongKeyError(RuntimeError):
+	pass
+
+
+class NoKeyError(WrongKeyError):
+	pass
 
 def orderSelected():
 	return orderNodes(hou.selectedNodes())
@@ -81,8 +89,14 @@ def getSerializer(enctype=None, **kwargs):
 
 		def _ser(x):
 			enc = AES.new(key, mode, iv)
-			return base64.b64encode(enc.encrypt(x))
-		return {'iv': iv, 'mode': mode}, _ser
+			xsize = len(x)
+			xbytes = ''.join((struct.pack('>Q', xsize), x))
+			rng = CRandom.new()
+			pad = rng.read(AES.block_size - len(xbytes) % AES.block_size)
+			magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
+			return base64.b64encode(enc.encrypt(''.join((xbytes, pad, magic_footer))))
+
+		return {'iv': base64.b64encode(iv), 'mode': mode}, _ser
 	else:
 		return None, lambda x: base64.b64encode(x)
 
@@ -90,12 +104,20 @@ def getSerializer(enctype=None, **kwargs):
 def getDeserializer(enctype=None, **kwargs):
 	if enctype == 'AES':
 		key = kwargs['key']
+		if key is None:
+			raise NoKeyError('no decryption key provided for encryption type AES')
 		mode = kwargs['mode']
-		iv = kwargs['iv']
+		iv = base64.b64decode(kwargs['iv'])
 
 		def _deser(x):
 			enc = AES.new(key, mode, iv)
-			return enc.decrypt(base64.b64decode(x))
+			xbytes = enc.decrypt(base64.b64decode(x))
+			xsize = struct.unpack('>Q', xbytes[:8])[0]
+			magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
+			print xsize < 0, xsize > len(xbytes), len(xbytes) - xsize - 8 > 2 * AES.block_size, xbytes[-AES.block_size:], magic_footer
+			if xsize < 0 or xsize > len(xbytes) or len(xbytes) - xsize - 8 > 2 * AES.block_size or xbytes[-AES.block_size:] != magic_footer:
+				raise WrongKeyError('seems that provided decryption key is wrong')
+			return xbytes[8: 8 + xsize]
 		return _deser
 	else:
 		return lambda x: base64.b64decode(x)
