@@ -227,6 +227,10 @@ class OptionsDialog(object):
 			self.ui_forcePreferred.toggled.connect(self.togglesCallback)
 			self.ui_hpastebox_pasteLayout.addWidget(self.ui_forcePreferred)
 
+			self.ui_ignore_houversion_warning = QCheckBox("Ignore Houdini version mismatch warning", self)
+			self.ui_ignore_houversion_warning.toggled.connect(self.togglesCallback)
+			self.ui_hpastebox_pasteLayout.addWidget(self.ui_ignore_houversion_warning)
+
 			stsh = "QWidget#MainWindow {\n	background-color : rgb(58,58,58);\n}\n"
 
 			if QDir(":/qt-project.org/styles/commonstyle/images/").exists():  # this was introduced to workaround a bug with one of houdini linux builds that had a bug of missing standard icons in some stylesheet cases
@@ -262,6 +266,7 @@ class OptionsDialog(object):
 				self.ui_saveHdasToggle.setChecked(hpasteoptions.getOption('hpaste.transfer_assets', True))
 				self.ui_ignoreWhenExists.setChecked(hpasteoptions.getOption('hpaste.ignore_hdas_if_already_defined', True))
 				self.ui_forcePreferred.setChecked(hpasteoptions.getOption('hpaste.force_prefer_hdas', False))
+				self.ui_ignore_houversion_warning.setChecked(hpasteoptions.getOption('hpaste.ignore_houversion_warning', False))
 				self.ui_encryption.setCurrentText(hpasteoptions.getOption('hpasteweb.encryption_type', 'None'))
 			finally:
 				self.__optionsReread = False
@@ -283,6 +288,8 @@ class OptionsDialog(object):
 				hpasteoptions.setOption('hpaste.ignore_hdas_if_already_defined', state)
 			if sender is self.ui_forcePreferred:
 				hpasteoptions.setOption('hpaste.force_prefer_hdas', state)
+			if sender is self.ui_ignore_houversion_warning:
+				hpasteoptions.setOption('hpaste.ignore_houversion_warning', state)
 
 	__instance = None
 
