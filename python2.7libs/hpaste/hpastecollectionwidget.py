@@ -72,6 +72,8 @@ class HPasteCollectionWidget(object):
 				except: #<=h15.5
 					hou.node("/obj").setSelected(False,clear_all_selected=True)
 				hpaste.stringToNodes(item.content(), ne=self.__nepane, override_network_position=self.__savedNetworkViewPos)
+			except RuntimeWarning as e:
+				log('Warnings encountered during load:\n%s' % e.message, 2)
 			except Exception as e:
 				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)
 
