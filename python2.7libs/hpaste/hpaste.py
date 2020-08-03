@@ -133,7 +133,7 @@ def getDeserializer(enctype=None, **kwargs):
 				raise WrongKeyError('seems that provided decryption key is wrong')
 			return xbytes[8: 8 + xsize]
 		return _deser
-	elif enctype is None or enctype.lower() == 'none':
+	elif enctype is None or enctype == '' or enctype.lower() == 'none':
 		return lambda x: base64.b64decode(x)
 	else:
 		raise RuntimeError('Encryption type unsupported. try updating hpaste')
@@ -297,9 +297,9 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 	formatVersion = data['version']
 	if formatVersion > current_format_version[0]:
 		raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
-	if data['version.minor'] > current_format_version[1]:
+	if data.get('version.minor', 0) > current_format_version[1]:
 		print('HPaste: Warning!! snippet has later format version than hpaste. Consider updating hpaste to the latest version')
-	if data['signed']:
+	if data.get('signed', False):
 		print('HPaste: Warning!! this snippet seem to be signed, but this version of HPaste has no idea how to check signatures! so signature check will be skipped!')
 
 	# check accepted algtypes
