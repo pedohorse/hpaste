@@ -42,8 +42,13 @@ class WrongKeyError(RuntimeError):
 	pass
 
 
+class WrongKeyLengthError(WrongKeyError):
+	pass
+
+
 class NoKeyError(WrongKeyError):
 	pass
+
 
 def orderSelected():
 	return orderNodes(hou.selectedNodes())
@@ -97,8 +102,10 @@ def getSerializer(enctype=None, **kwargs):
 			return base64.b64encode(enc.encrypt(''.join((xbytes, pad, magic_footer))))
 
 		return {'iv': base64.b64encode(iv), 'mode': mode}, _ser
-	else:
+	elif enctype is None or enctype.lower() == 'none':
 		return None, lambda x: base64.b64encode(x)
+	else:
+		raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
 def getDeserializer(enctype=None, **kwargs):
@@ -111,7 +118,12 @@ def getDeserializer(enctype=None, **kwargs):
 		magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 
 		def _deser(x):
-			enc = AES.new(key, mode, iv)
+			try:
+				enc = AES.new(key, mode, iv)
+			except ValueError as e:
+				if e.message.startswith('AES key must'):
+					raise WrongKeyLengthError('invalid key length!')
+				raise
 			xbytes = enc.decrypt(base64.b64decode(x))
 			xsize = struct.unpack('>Q', xbytes[:8])[0]
 			print xsize < 0, xsize > len(xbytes), len(xbytes) - xsize - 8 > 2 * AES.block_size, xbytes[-AES.block_size:], magic_footer
@@ -119,8 +131,10 @@ def getDeserializer(enctype=None, **kwargs):
 				raise WrongKeyError('seems that provided decryption key is wrong')
 			return xbytes[8: 8 + xsize]
 		return _deser
-	else:
+	elif enctype is None or enctype.lower() == 'none':
 		return lambda x: base64.b64decode(x)
+	else:
+		raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
 def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
