@@ -129,7 +129,6 @@ def getDeserializer(enctype=None, **kwargs):
 				raise
 			xbytes = enc.decrypt(base64.b64decode(x))
 			xsize = struct.unpack('>Q', xbytes[:8])[0]
-			print xsize < 0, xsize > len(xbytes), len(xbytes) - xsize - 8 > 2 * AES.block_size, xbytes[-AES.block_size:], magic_footer
 			if xsize < 0 or xsize > len(xbytes) or len(xbytes) - xsize - 8 > 2 * AES.block_size or xbytes[-AES.block_size:] != magic_footer:
 				raise WrongKeyError('seems that provided decryption key is wrong')
 			return xbytes[8: 8 + xsize]
