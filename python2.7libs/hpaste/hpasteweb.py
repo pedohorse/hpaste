@@ -20,6 +20,7 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 			pluginClasses = []
 			for pname in pluginList:
 				pluginClasses += [x for x in hpastewebplugins.pluginClassList if x.__name__ == pname]
+		cls = None
 		for cls in pluginClasses:
 			try:
 				packer = cls()
@@ -34,7 +35,7 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 				print("error: %s" % str(e.message))
 				print("failed to pack with plugin %s, looking for alternatives..." % cls.__name__)
 				continue
-		if packid is None:
+		if packid is None or cls is None:
 			print("all web packing methods failed, sorry :(")
 			raise RuntimeError("couldnt web pack data")
 
