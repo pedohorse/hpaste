@@ -101,7 +101,7 @@ def hpasteweb(pane=None):
                 geonode = e.node().createNode('geo')
                 if pane is not None:
                     geonode.setPosition(pane.cursorPosition())
-                stringToNodes(s, hou_parent=geonode)
+                stringToNodes(s, hou_parent=geonode, key=key)
         else:
             hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
             return
