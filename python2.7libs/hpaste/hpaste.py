@@ -24,6 +24,9 @@ except:
 # from pprint import pprint
 
 
+current_format_version = (2, 2)
+
+
 class InvalidContextError(RuntimeError):
 	def __init__(self, parent_node, snippetcontext):
 		super(InvalidContextError, self).__init__("this snippet has '%s' context" % snippetcontext)
@@ -229,8 +232,8 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 
 	data = {}
 	data['algtype'] = algtype
-	data['version'] = 2
-	data['version.minor'] = 2
+	data['version'] = current_format_version[0]
+	data['version.minor'] = current_format_version[1]
 	data['houver'] = houver
 	data['context'] = context
 	data['code'] = code
@@ -293,10 +296,12 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 
 	# check version
 	formatVersion = data['version']
-	if formatVersion > 2:
+	if formatVersion > current_format_version[0]:
 		raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
-	if data['version.minor'] > 2:
+	if data['version.minor'] > current_format_version[1]:
 		print('HPaste: Warning!! snippet has later format version than hpaste. Consider updating hpaste to the latest version')
+	if data['signed']:
+		print('HPaste: Warning!! this snippet seem to be signed, but this version of HPaste has no idea how to check signatures! so signature check will be skipped!')
 
 	# check accepted algtypes
 	supportedAlgs = set()
@@ -367,7 +372,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 	elif formatVersion >= 2:
 		code = deserialize(code)
 	else:
-		raise RuntimeError("Very unexpected format version in a very inexpected place!")
+		raise RuntimeError("Very unexpected format version in a very unexpected place!")
 
 	if algtype == 0:
 		# high security risk!!
