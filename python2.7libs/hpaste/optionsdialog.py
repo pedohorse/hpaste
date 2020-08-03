@@ -201,6 +201,20 @@ class OptionsDialog(object):
 			self.ui_saveHdasToggle.toggled.connect(self.togglesCallback)
 			self.ui_hpastebox_copyLayout.addWidget(self.ui_saveHdasToggle)
 
+			self.ui_encLayout = QHBoxLayout()
+
+			self.ui_encLabel = QLabel('encryption type:', self)
+			self.ui_encLabel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+			self.ui_encLayout.addWidget(self.ui_encLabel)
+
+			self.ui_encryption = QComboBox(self)
+			self.ui_encryption.addItems(['None', 'AES-CBC'])
+			self.ui_encryption.setEditable(False)
+			self.ui_encryption.currentTextChanged.connect(self.encchangedCallback)
+
+			self.ui_encLayout.addWidget(self.ui_encryption)
+			self.ui_hpastebox_copyLayout.addLayout(self.ui_encLayout)
+
 			self.ui_hpastebox_paste = QGroupBox("paste", self)
 			self.ui_hpastebox_pasteLayout = QVBoxLayout(self.ui_hpastebox_paste)
 			self.ui_hpasteboxLayout.addWidget(self.ui_hpastebox_paste)
@@ -248,8 +262,15 @@ class OptionsDialog(object):
 				self.ui_saveHdasToggle.setChecked(hpasteoptions.getOption('hpaste.transfer_assets', True))
 				self.ui_ignoreWhenExists.setChecked(hpasteoptions.getOption('hpaste.ignore_hdas_if_already_defined', True))
 				self.ui_forcePreferred.setChecked(hpasteoptions.getOption('hpaste.force_prefer_hdas', False))
+				self.ui_encryption.setCurrentText(hpasteoptions.getOption('hpasteweb.encryption_type', 'None'))
 			finally:
 				self.__optionsReread = False
+
+		@Slot(str)
+		def encchangedCallback(self, newtext):
+			if self.__optionsReread:
+				return
+			hpasteoptions.setOption('hpasteweb.encryption_type', newtext)
 
 		@Slot(bool)
 		def togglesCallback(self, state):
