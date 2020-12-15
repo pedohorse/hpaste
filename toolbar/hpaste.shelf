@@ -91,105 +91,16 @@ do(kwargs['pane'])
   </tool>
 
   <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
-    <script scriptType="python"><![CDATA[try:
-    from PySide2.QtWidgets import QApplication
-    from PySide2 import QtCore as qtc
-except:
-    from PySide.QtGui import QApplication
-    from PySide import QtCore as qtc
-    
-import hpaste
-
-def do():
-    qapp = QApplication.instance()
-    try:
-        nodes=hou.selectedItems()
-    except:
-        nodes=hou.selectedNodes()
-    try:
-        s=hpaste.nodesToString(nodes)
-    except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
-        return
-    except RuntimeWarning as e:
-        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
-    except Exception as e:
-        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
-        return
-
-    if isinstance(qapp, QApplication):
-        qapp.setOverrideCursor(qtc.Qt.WaitCursor);
-    try:
-        s=hpaste.webPack(s)
-    except Exception as e:
-        hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
-        return
-    finally:
-        if isinstance(qapp, QApplication):
-            qapp.restoreOverrideCursor()
-
-    if hou.applicationVersion()[0] > 15:
-        hou.ui.copyTextToClipboard(s)
-    else:
-        qapp.clipboard().setText(s)
-    hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
-
-do()]]></script>
+    <script scriptType="python"><![CDATA[
+from hpaste.hpasteshelffunctions import hcopyweb
+hcopyweb()
+]]></script>
   </tool>
 
   <tool name="hpasteweb" label="HPasteWeb" icon="cloud-download.svg">
-    <script scriptType="python"><![CDATA[try:
-    from PySide2.QtWidgets import QApplication
-    from PySide2 import QtCore as qtc
-except:
-    from PySide.QtGui import QApplication
-    from PySide import QtCore as qtc
-    
-import hpaste
-
-def do(pane=None):
-    qapp = QApplication.instance()
-    if hou.applicationVersion()[0] > 15:
-        s = hou.ui.getTextFromClipboard()
-    else:
-        s=qapp.clipboard().text()
-
-    if isinstance(qapp, QApplication):
-        qapp.setOverrideCursor(qtc.Qt.WaitCursor);
-    try:
-        s=hpaste.webUnpack(s)
-    except Exception as e:
-        hou.ui.displayMessage(e.message,severity=hou.severityType.Error,title='error')
-        return
-    finally:
-        if isinstance(qapp, QApplication):
-            qapp.restoreOverrideCursor()
-        
-    try:
-        hpaste.stringToNodes(s, ne=pane)
-    except hpaste.InvalidContextError as e:
-        nec, snc = e.contexts()
-        if snc == 'Sop' and nec == 'Object':
-            if hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
-                geonode = e.node().createNode('geo')
-                if pane is not None:
-                    geonode.setPosition(pane.cursorPosition())
-                hpaste.stringToNodes(s, hou_parent=geonode)
-        else:
-            hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
-            return
-    except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s"%str(e.message),severity=hou.severityType.Error)
-        return
-    except RuntimeWarning as e:
-        hou.ui.displayMessage("Warning: %s"%str(e.message),severity=hou.severityType.Warning)
-    except Exception as e:
-        hou.ui.displayMessage("Internal Error: %s"%str(e.message),severity=hou.severityType.Error)
-        return
-    hou.ui.setStatusMessage("Success: Nodes pasted!")
-
-
-do(kwargs['pane'])
+    <script scriptType="python"><![CDATA[
+from hpaste.hpasteshelffunctions import hpasteweb
+hpasteweb(kwargs['pane'])
 ]]></script>
   </tool>
 
