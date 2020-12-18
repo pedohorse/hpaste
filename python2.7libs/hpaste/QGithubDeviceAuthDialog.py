@@ -3,9 +3,9 @@ import json
 import urllib2
 from nethelper import urlopen_nt
 try:
-    from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QSizePolicy
-    from PySide2.QtWebEngineWidgets import QWebEngineView
-    from PySide2.QtCore import QUrl
+    from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QSizePolicy, QPushButton
+    from PySide2.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
+    from PySide2.QtCore import Slot, Qt, QUrl
 except ImportError:
     raise NotImplementedError('web auth implemented only for QT5. Sorry, people who still use houdini 16.5. You will have to create access token manually. contact me to ask how.')
 
@@ -13,7 +13,7 @@ import time
 
 
 class QGithubDeviceAuthDialog(QDialog):
-    def __init__(self, client_id='42e8e8e9d844e45c2d05', parent=None):
+    def __init__(self, client_id='42e8e8e9d844e45c2d05', hint_username=None, parent=None):
         super(QGithubDeviceAuthDialog, self).__init__(parent=parent)
         self.setWindowTitle('Log into your GitHub account and enter this code')
 
@@ -21,21 +21,34 @@ class QGithubDeviceAuthDialog(QDialog):
         self.__webview.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.__webview.urlChanged.connect(self.on_url_changed)
 
+        self.__infolaabel = QLabel('<br>You need to allow hpaste to modify your gists on github. for that you need to log in to your account and authorise hpaste.\n'
+                                   '<br>You can do it in any browser, just go to <a href="https://github.com/login/device">https://github.com/login/device</a> and enter the code below.\n'
+                                   '<br>close this window when you are done', parent=self)
+        self.__infolaabel.setTextFormat(Qt.RichText)
+        self.__infolaabel.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        self.__infolaabel.setOpenExternalLinks(True)
         self.__devidlabel = QLabel(parent=self)
+        self.__devidlabel.setTextInteractionFlags(Qt.TextBrowserInteraction)
         ff = self.__devidlabel.font()
         ff.setPointSize(64)
         self.__devidlabel.setFont(ff)
 
+        self.__reload_button = QPushButton('log in to a different account', parent=self)
+        self.__reload_button.clicked.connect(self.reload_button_clicked)
+
         self.__layout = QVBoxLayout()
         self.setLayout(self.__layout)
+        self.__layout.addWidget(self.__infolaabel)
         self.__layout.addWidget(self.__devidlabel)
+        self.__layout.addWidget(self.__reload_button)
         self.__layout.addWidget(self.__webview)
         self.__result = None
 
         # init auth process
         self.__client_id = client_id
         self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/json', 'Content-Type': 'application/json'}
-        reqdata = {'client_id': self.__client_id, 'scope': 'gist'}
+        reqdata = {'client_id': self.__client_id,
+                   'scope': 'gist'}
         req = urllib2.Request('https://github.com/login/device/code', data=json.dumps(reqdata), headers=self.__headers)
         req.get_method = lambda: 'POST'
         code, ret = urlopen_nt(req)
@@ -45,8 +58,19 @@ class QGithubDeviceAuthDialog(QDialog):
         print(init_data)
         self.__device_code = init_data['device_code']
         self.__interval = init_data.get('interval', 5)
-        self.__webview.load(QUrl(init_data['verification_uri']))
+        self.__webprofile = QWebEngineProfile('empty', parent=self)
+        self.__webprofile.clearHttpCache()
+        self.__webprofile.cookieStore().deleteAllCookies()
+        self.__webpage = QWebEnginePage(self.__webprofile, parent=self.__webprofile)  # just to be sure they are deleted in proper order
+        self.__webview.setPage(self.__webpage)
+        url = init_data['verification_uri']
+        self.__hint_username = hint_username
+        self.__await_login_redirect = True
+        self.__webview.load(QUrl(url))
         self.__devidlabel.setText('code: %s' % (init_data['user_code'],))
+
+        #self.setGeometry(512, 256, 1024, 768)
+        self.resize(1024, 768)
 
     def get_result(self):
         return self.__result
@@ -62,14 +86,27 @@ class QGithubDeviceAuthDialog(QDialog):
             code, ret = urlopen_nt(req)
             if code == 200:
                 rep = json.loads(ret.read())
-                if 'error' not in rep:
-                    self.__result = rep
+                print(rep)
+                if 'error' not in rep:  # a SUCC
+                    headers = {'User-Agent': 'HPaste',
+                                'Authorization': 'Token %s' % rep['access_token'],
+                                'Accept': 'application/vnd.github.v3+json'}
+                    req = urllib2.Request(r'https://api.github.com/user', headers=headers)
+                    usercode, userrep = urlopen_nt(req)
+                    if usercode != 200:
+                        raise RuntimeError('could not probe! %d' % (usercode,))
+                    userdata = json.loads(userrep.read())
+                    print(userdata)
+
+                    self.__result = {'token': rep['access_token'],
+                                     'user': userdata['login']}
                     break
 
+                # NO SUCC
                 errcode = rep['error']
-                if errcode == 'authorization_pending':
-                    time.sleep(self.__interval)
-                    continue
+                if errcode == 'authorization_pending':  # note that this error will happen if user just closes down the window
+                    self.__result = None
+                    break
                 elif errcode == 'slow_down':
                     self.__interval = rep.get('interval', self.__interval + 5)
                     time.sleep(self.__interval)
@@ -96,9 +133,28 @@ class QGithubDeviceAuthDialog(QDialog):
 
         return super(QGithubDeviceAuthDialog, self).closeEvent(event)
 
+    @Slot(object)
     def on_url_changed(self, qurl):
         url = qurl.toString()
         print(url)
+        if not self.__await_login_redirect:
+            return
+        if qurl.path() != '/login':
+            return
+        self.__await_login_redirect = False
+        if self.__hint_username is not None:
+            if qurl.hasQuery():
+                qurl.setQuery('&'.join((qurl.query(), 'login=%s' % self.__hint_username)))
+            else:
+                qurl.setQuery('login=%s' % self.__hint_username)
+        print('redir to %s' % qurl.toString)
+        self.__webview.load(qurl)
+
+    @Slot()
+    def reload_button_clicked(self):
+        #QWebEngineProfile.defaultProfile().cookieStore().deleteAllCookies()
+        self.__webview.page().profile().cookieStore().deleteAllCookies()
+        self.__webview.reload()
 
 
 if __name__ == '__main__':  # testing
@@ -113,8 +169,7 @@ if __name__ == '__main__':  # testing
                     'redirect_uri': 'https://github.com/login/oauth/success',
                     'scope': 'gist',
                     'state': webauthstate}
-    w = QGithubDeviceAuthDialog(client_id='42e8e8e9d844e45c2d05', parent=None)
-    w.setGeometry(512, 256, 1024, 768)
+    w = QGithubDeviceAuthDialog(client_id='42e8e8e9d844e45c2d05', hint_username='ololovich', parent=None)
     res = w.exec_()
     print(res == QGithubDeviceAuthDialog.Accepted)
     print(w.get_result())

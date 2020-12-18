@@ -13,7 +13,8 @@ try:
 except ImportError:
     from PySide.QtGui import QMessageBox, QInputDialog
 
-from QWebAuthDialog import QWebAuthDialog
+#from QWebAuthDialog import QWebAuthDialog
+from QGithubDeviceAuthDialog import QGithubDeviceAuthDialog
 
 import random
 import string
@@ -80,12 +81,7 @@ class GithubAuthorizator(object):
                 continue
 
     @classmethod
-    def newAuthorization(cls, auth=None, altparent=None):
-        def showWarningMessage(message, parent):
-            if hou.isUIAvailable():
-                hou.ui.displayMessage(message)
-            else:
-                QMessageBox.warning(parent, 'error', message)
+    def newAuthorization(cls, auth=None, altparent=None):  # type: (dict, "QObject") -> bool
         # appends or changes auth in file
         # auth parameter is used as default data when promped user, contents of auth will get replaced if user logins successfully
         code = 0
@@ -105,111 +101,37 @@ class GithubAuthorizator(object):
             cls.writeAuthorizationFile(data)
             return True
 
-        while True:
-            defuser = auth['user'] if auth is not None else ''
+        # make a new auth
+        logindialog = QGithubDeviceAuthDialog('42e8e8e9d844e45c2d05', auth['user'] if auth is not None else None, parent=altparent)
+        logindialog.exec_()
+        result = logindialog.get_result()
+        if result is None:
+            return False
+        newauth.update(result)
+        username = newauth['user']
 
+        # now update passed auth TODO: why am i doing this? just return it
+        if auth is None:
+            auth = {}
+        auth.update(newauth)
+
+        # send callbacks
+        oldones = [x for x in data['collections'] if x['user'] == username]
+        for old in oldones:
+            data['collections'].remove(old)
+            cls.__sendCallbacks((old, 0, 0))
+
+        data['collections'].append(newauth)
+        cls.__sendCallbacks((newauth, 0, 1))
+        try:
+            cls.writeAuthorizationFile(data)
+        except:
             if hou.isUIAvailable():
-                btn, (username, password) = hou.ui.readMultiInput('github authorization required. code %d' % code,
-                                                                  ('username', 'password'), (1,),
-                                                                  buttons=('Ok', 'Cancel'), initial_contents=(defuser,))
+                hou.ui.displayMessage("writing token to file failed!")
             else:
-                username, password, btn = QDoubleInputDialog.getUserPassword(altparent, 'authorization',
-                                                                             'github authorization required. code %d' % code,
-                                                                             'username', 'password', defuser)
-                btn = 1 - btn
-            if btn != 0:
-                if auth is None:
-                    return False
-                else:
-                    if hou.isUIAvailable():
-                        btn = hou.ui.displayMessage('Do you want to remove account %s from remembered?' % auth['user'],
-                                                    buttons=('Yes', 'No'), close_choice=1)
-                    else:
-                        btn = QMessageBox.question(altparent, 'question',
-                                                   'Do you want to remove account %s from remembered?' % auth['user'])
-                        btn = btn == QMessageBox.No
-                    if btn == 1:
-                        return False
-                    oldones = [x for x in data['collections'] if x['user'] == auth['user']]
-                    for old in oldones:
-                        data['collections'].remove(old)
-                        cls.__sendCallbacks((old, 0, 0))
-                    try:
-                        cls.writeAuthorizationFile(data)
-                    except:
-                        showWarningMessage("writing token to file failed!", altparent)
-                    return False
-
-            for attempt in xrange(4):  # really crude way of avoiding conflicts for now
-                webauthstate = ''.join(random.choice(string.ascii_letters) for _ in xrange(32))
-                webauthparms = {'client_id': '42e8e8e9d844e45c2d05',
-                                'redirect_uri': 'https://github.com/login/oauth/success',
-                                'scope': 'gist',
-                                'state': webauthstate}
-                auth_dialog = QWebAuthDialog(url='https://github.com/login/oauth/authorize?' +
-                                                 '&'.join('%s=%s' % (k, v) for k, v in webauthparms.iteritems()),
-                                             success_re=r'https://github.com/login/oauth/success\?(.*)',
-                                             parent=None)
-                res = auth_dialog.exec_()
-                if res == QWebAuthDialog.Rejected:
-                    return False
-                if auth_dialog.get_result() is None:
-                    showWarningMessage('very much unexpected error', altparent)
-                    continue
-                authdata = {k: v for eqe in auth_dialog.get_result().group(1).split('&') for k, v in (eqe.split('='),)}
-                if webauthstate != authdata.get('state', None):
-                    showWarningMessage('secret code mismatch! someone tries to impersonate github!!')
-                    return False
-
-                headers = {'User-Agent': 'HPaste',
-                           'client_id': '',
-                           'Accept': 'application/vnd.github.v3+json'}
-                postdata = {'scopes': ['gist'], 'note': 'HPaste Collection Access at %s, %s' % (
-                socket.gethostname(), ''.join(random.choice(string.ascii_letters) for _ in xrange(6)))}
-                req = urllib2.Request(r'https://api.github.com/authorizations', json.dumps(postdata), headers=headers)
-                code, rep = urlopen_nt(req)
-
-                if code == 201:
-                    repdata = json.loads(rep.read())
-
-                    newauth['token'] = repdata['token']  # TODO: check if reply is as expected
-                    newauth['user'] = username
-                    if auth is None:
-                        auth = {}
-                    for key in newauth: auth[key] = newauth[key]
-                    oldones = [x for x in data['collections'] if x['user'] == username]
-                    for old in oldones:
-                        data['collections'].remove(old)
-                        cls.__sendCallbacks((old, 0, 0))
-
-                    data['collections'].append(newauth)
-                    cls.__sendCallbacks((newauth, 0, 1))
-                    try:
-                        cls.writeAuthorizationFile(data)
-                    except:
-                        if hou.isUIAvailable():
-                            hou.ui.displayMessage("writing token to file failed!")
-                        else:
-                            QMessageBox.warning(altparent, 'error', "writing token to file failed!")
-                    return True
-                elif code == 422:
-                    # postdata was not accepted
-                    # so we just make another attempt of creating a token (github requires unique note)
-                    pass
-                elif code == 401:
-                    if hou.isUIAvailable():
-                        hou.ui.displayMessage('wrong username or password')
-                    else:
-                        QMessageBox.warning(altparent, 'error', 'wrong username or password')
-                    break
-            else:
-                if hou.isUIAvailable():
-                    hou.ui.displayMessage(
-                        'Could not receive token from github.\nDid you verify your email address?\nAlso please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
-                else:
-                    QMessageBox.warning(altparent, 'error',
-                                        'Could not receive token from github.\nDid you verify your email address?\nAlso please check and manually delete all HPaste tokens from your github account here: https://github.com/settings/tokens')
-        return False
+                QMessageBox.warning(altparent, 'error', "writing token to file failed!")
+            return False
+        return True
 
     @classmethod
     def removeAuthorization(cls, username):
