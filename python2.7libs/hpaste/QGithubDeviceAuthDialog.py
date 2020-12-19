@@ -23,7 +23,7 @@ class QGithubDeviceAuthDialog(QDialog):
 
         self.__infolaabel = QLabel('<p style="font-size:14px">'
                                    '<br>You need to allow hpaste to modify your gists on github. for that you need to log in to your account and authorize hpaste.\n'
-                                   '<br>You can do it in any browser, just go to <a href="https://github.com/login/device">https://github.com/login/device</a> and enter the code below.\n'
+                                   '<br>You can do it in <b>any</b> browser, not only in this window. Just go to <a href="https://github.com/login/device">https://github.com/login/device</a> and enter the code below.\n'
                                    '<br>close this window when you are done'
                                    '</p>', parent=self)
         self.__infolaabel.setTextFormat(Qt.RichText)
@@ -54,10 +54,8 @@ class QGithubDeviceAuthDialog(QDialog):
         self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/json', 'Content-Type': 'application/json'}
         self.__hint_username = hint_username
 
-        self.__webprofile = QWebEngineProfile('empty', parent=self)
-
-        self.__webpage = QWebEnginePage(self.__webprofile, parent=self.__webprofile)  # just to be sure they are deleted in proper order
-        self.__webview.setPage(self.__webpage)
+        self.__webprofile = None
+        self.__webpage = None
 
         self.__device_code = None
         self.__interval = None
@@ -79,11 +77,11 @@ class QGithubDeviceAuthDialog(QDialog):
         url = init_data['verification_uri']
 
         self.__await_login_redirect = True
-        self.__webprofile.clearHttpCache()
-        self.__webprofile.cookieStore().deleteAllCookies()
+        self.__webprofile = QWebEngineProfile(parent=self.__webview)
+        self.__webpage = QWebEnginePage(self.__webprofile, parent=self.__webview)  # just to be sure they are deleted in proper order
+        self.__webview.setPage(self.__webpage)
         self.__webview.load(QUrl(url))
         self.__devidlabel.setText('code: %s' % (init_data['user_code'],))
-
 
     def get_result(self):
         return self.__result
@@ -117,7 +115,8 @@ class QGithubDeviceAuthDialog(QDialog):
 
                 # NO SUCC
                 errcode = rep['error']
-                if errcode == 'authorization_pending':  # note that this error will happen if user just closes down the window
+                if errcode == 'authorization_pending':
+                    # note that this error will happen if user just closes down the window
                     break
                 elif errcode == 'slow_down':
                     self.__interval = rep.get('interval', self.__interval + 5)
@@ -128,6 +127,7 @@ class QGithubDeviceAuthDialog(QDialog):
                         event.reject()
                         self.reinit_code()
                         return
+                    break
                 elif errcode == 'unsupported_grant_type':
                     raise RuntimeError('unsupported grant type. probably github changed API. need to update the plugin')
                 elif errcode == 'incorrect_client_credentials':
@@ -137,15 +137,19 @@ class QGithubDeviceAuthDialog(QDialog):
                         event.reject()
                         self.reinit_code()
                         return
+                    break
                 elif errcode == 'access_denied':
                     # means user denied the request
-                    pass
+                    break
                 else:
                     raise RuntimeError('unexpected error: %s' % (json.dumps(rep),))
             else:
-                raise NotImplementedError()
+                raise RuntimeError('bad return code. server reported with bad return code %d' % code)
         else:
-            raise NotImplementedError()
+            if QMessageBox.warning(self, 'unknown error', 'could not manage to check authorization in reasonable amount of attempts\nWant to retry?', buttons=QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+                event.reject()
+                self.reinit_code()
+                return
 
         return super(QGithubDeviceAuthDialog, self).closeEvent(event)
 
@@ -168,7 +172,6 @@ class QGithubDeviceAuthDialog(QDialog):
 
     @Slot()
     def reload_button_clicked(self):
-        #QWebEngineProfile.defaultProfile().cookieStore().deleteAllCookies()
         self.reinit_code()
 
 
