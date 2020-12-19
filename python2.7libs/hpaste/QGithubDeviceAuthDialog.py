@@ -23,7 +23,7 @@ class QGithubDeviceAuthDialog(QDialog):
 
         self.__infolaabel = QLabel('<p style="font-size:14px">'
                                    '<br>You need to allow hpaste to modify your gists on github. for that you need to log in to your account and authorize hpaste.\n'
-                                   '<br>You can do it in any browser, just go to <a href="https://github.com/login/device">https://github.com/login/device</a> and enter the code below.\n'
+                                   '<br>You can do it in <b>any</b> browser, just go to <a href="https://github.com/login/device">https://github.com/login/device</a> and enter the code below.\n'
                                    '<br>close this window when you are done'
                                    '</p>', parent=self)
         self.__infolaabel.setTextFormat(Qt.RichText)
