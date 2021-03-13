@@ -17,7 +17,7 @@ import tempfile
 
 opt = None
 try:
-	import hpasteoptions as opt
+	from . import hpasteoptions as opt
 except:
 	print("Hpaste: Failed to load options, using defaults")
 # for debug
@@ -139,7 +139,7 @@ def getDeserializer(enctype=None, **kwargs):
 		raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
-def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
+def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -> bytes:
 	"""
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -208,7 +208,7 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 						definition.copyToHDAFile(temppath)
 						with open(temppath, 'rb') as f:
 							hdacode = f.read()
-						hdaList.append({'type': node.type().name(), 'category': node.type().category().name(), 'code': serialize(hdacode)})
+						hdaList.append({'type': node.type().name(), 'category': node.type().category().name(), 'code': serialize(hdacode).decode('UTF-8')})
 					finally:
 						os.close(fd)
 
@@ -235,7 +235,7 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 	data['version.minor'] = current_format_version[1]
 	data['houver'] = houver
 	data['context'] = context
-	data['code'] = code
+	data['code'] = code.decode('UTF-8')  # utf8 here doesnt matter since we work within base64
 	data['hdaList'] = hdaList
 	data['chsum'] = hashlib.sha1(code).hexdigest()
 	# security entries, for future
@@ -246,9 +246,10 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 	data['signed'] = False
 	data['signatureType'] = ''
 	data['signatureData'] = None
+	print(data)
 	# these suppose there is a trusted vendors list with their public keys stored
 
-	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data)))
+	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data).encode('UTF-8')))
 
 	return stringdata
 
@@ -274,9 +275,10 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 		if opt is not None:
 			force_prefer_hdas = opt.getOption('hpaste.force_prefer_hdas', force_prefer_hdas)
 
-	s = str(s)  # ununicode. there should not be any unicode in it anyways
+	if isinstance(s, str):
+		s = s.encode('UTF-8')  # ununicode. there should not be any unicode in it anyways
 	try:
-		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)))
+		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)).decode('UTF-8'))
 	except Exception as e:
 		raise RuntimeError("input data is either corrupted or just not a nodecode: " + str(e.message))
 
@@ -327,7 +329,7 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 		raise InvalidContextError(hou_parent, data['context'])  # RuntimeError("this snippet has '%s' context" % data['context'])
 
 	# check sum
-	code = data['code']
+	code = data['code'].encode('UTF-8')
 	if hashlib.sha1(code).hexdigest() != data['chsum']:
 		raise RuntimeError("checksum failed!")
 

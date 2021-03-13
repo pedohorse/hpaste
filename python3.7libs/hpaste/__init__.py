@@ -1,5 +1,5 @@
 try:
-	from hpaste import *
+	from .hpaste import *
 except:
 	print("couldnt init hpaste")
-from hpasteweb import *
+from .hpasteweb import *

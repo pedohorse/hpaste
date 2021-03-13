@@ -1,9 +1,9 @@
-import hpastewebplugins
-import widcacher
+from . import hpastewebplugins
+from . import widcacher
 import random  # to shuffle plugins
 import re  # to cleanup wid
 
-from webclipboardbase import WebClipBoardWidNotFound
+from .webclipboardbase import WebClipBoardWidNotFound
 
 
 def webPack(asciiText, pluginList=None, maxChunkSize=None):
@@ -32,7 +32,7 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 				asciiText = asciiText[chunklen:]
 				break
 			except Exception as e:
-				print("error: %s" % str(e.message))
+				print("error: %s" % repr(e))
 				print("failed to pack with plugin %s, looking for alternatives..." % cls.__name__)
 				continue
 		if packid is None or cls is None:
@@ -81,7 +81,7 @@ def webUnpack(wid, useCached=True, cache=None):
 			except WebClipBoardWidNotFound as e:
 				raise RuntimeError('item "%s" does not exist. it may have expired' % e.wid)
 			except Exception as e:
-				print("error: %s: %s" % (str(type(e)), str(e.message)))
+				print("error: %s: %s" % (str(type(e)), repr(e)))
 				print("Exception: %s" % repr(e))
 				print("keep trying...")
 				continue
