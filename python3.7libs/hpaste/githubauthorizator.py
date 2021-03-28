@@ -127,7 +127,7 @@ class GithubAuthorizator(object):
         if len(auths) == 0:
             return False
 
-        data['collections'] = filter(lambda x: x['user'] != username, data['collections'])
+        data['collections'] = [x for x in data['collections'] if x['user'] != username]
         for auth in auths:
             cls.__sendCallbacks((auth, 0, 0))
         cls.writeAuthorizationFile(data)
@@ -162,7 +162,7 @@ class GithubAuthorizator(object):
         if btn != 0:
             return False
         oldones = [x for x in data['publiccollections'] if x['user'] == username]
-        data['publiccollections'] = filter(lambda x: x['user'] != username, data['publiccollections'])
+        data['publiccollections'] = [x for x in data['publiccollections'] if x['user'] != username]
         for old in oldones:
             cls.__sendCallbacks((old, 1, 0))
         newitem = cls.defaultentry
@@ -176,7 +176,7 @@ class GithubAuthorizator(object):
     def removePublicCollection(cls, username):
         data = GithubAuthorizator.readAuthorizationsFile()
         oldones = [x for x in data['publiccollections'] if x['user'] == username]
-        data['publiccollections'] = filter(lambda x: x['user'] != username, data['publiccollections'])
+        data['publiccollections'] = [x for x in data['publiccollections'] if x['user'] != username]
         for old in oldones:
             cls.__sendCallbacks((old, 1, 0))
         cls.writeAuthorizationFile(data)
