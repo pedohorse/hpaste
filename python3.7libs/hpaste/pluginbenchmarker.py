@@ -7,14 +7,14 @@ from pprint import pprint
 def doTest(cycles=1):
 	pluginlist=[x for x in hpastewebplugins.pluginClassList]
 	ts=''
-	for i in xrange(50000):ts+=chr(random.randint(ord('A'),ord('Z')))
+	for i in range(50000):ts+=chr(random.randint(ord('A'),ord('Z')))
 	#s is 50 kb
 	times={}
-	for cycle in xrange(cycles):
-		for i in xrange(3):
+	for cycle in range(cycles):
+		for i in range(3):
 			if(i==0):s=ts
 			elif(i==1):s=ts*10
-			elif(i==2):s=ts*50
+			else:s=ts*50
 
 			for plug in pluginlist:
 				if (plug.__name__ not in times): times[plug.__name__] = [[0,0,0],[0,0,0],[0,0,0]] #up,down,count
@@ -39,7 +39,7 @@ def doTest(cycles=1):
 	print('------------------------------\n')
 	for k in times:
 		print("%s :"%k)
-		for i in xrange(3):
+		for i in range(3):
 			if(times[k][i][2]==0):
 				print("\t FAILED")
 			else:
