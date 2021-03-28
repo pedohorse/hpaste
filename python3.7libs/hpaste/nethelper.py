@@ -1,5 +1,6 @@
-import urllib2
-from logger import defaultLogger as log
+from urllib import request, error
+from .logger import defaultLogger as log
+
 
 class ErrorReply(object):
 	def __init__(self, code, headers=None, msg=''):
@@ -16,8 +17,7 @@ class ErrorReply(object):
 		return None
 
 
-def urlopen_nt(req, fallback_cert=0):
-	# type: (urllib2.Request, int) -> (int, object)
+def urlopen_nt(req: request.Request, fallback_cert: int = 0) -> (int, object):
 	"""
 	wrapper around urllib2.urlopen that does not throw HTTPError
 	and does some additional things like falling back on SSL certs
@@ -30,18 +30,18 @@ def urlopen_nt(req, fallback_cert=0):
 	# print req.get_full_url(), req.get_data(), fallback_cert
 	try:
 		if fallback_cert == 0:
-			rep = urllib2.urlopen(req)
+			rep = request.urlopen(req)
 		elif fallback_cert == 1:
 			import certifi
-			rep = urllib2.urlopen(req, cafile=certifi.where())
+			rep = request.urlopen(req, cafile=certifi.where())
 		elif fallback_cert == 2:
 			import ssl
-			rep = urllib2.urlopen(req, context=ssl._create_unverified_context())
+			rep = request.urlopen(req, context=ssl._create_unverified_context())
 			log("connected with unverified context", 2)
-	except urllib2.HTTPError as e:
+	except error.HTTPError as e:
 		code = e.code
-		rep = ErrorReply(code, e.headers, e.msg)
-	except urllib2.URLError as e:
+		rep = ErrorReply(code, e.headers, e.reason)
+	except error.URLError as e:
 		if fallback_cert < 2:
 			return urlopen_nt(req, fallback_cert+1)
 		else:
