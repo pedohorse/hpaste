@@ -3,12 +3,8 @@ import random
 import string
 from Crypto.Cipher import AES  # just for blocksize and constants
 
-try:
-    from PySide2.QtWidgets import QApplication
-    from PySide2 import QtCore as qtc
-except:
-    from PySide.QtGui import QApplication
-    from PySide import QtCore as qtc
+from PySide2.QtWidgets import QApplication
+from PySide2 import QtCore as qtc
 
 from .hpaste import stringToNodes, nodesToString, InvalidContextError, WrongKeyLengthError, WrongKeyError, NoKeyError
 from .hpasteweb import webPack, webUnpack
@@ -104,7 +100,7 @@ def hpasteweb(pane=None):
         hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
         return
     except NoKeyError as e:
-        hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e.message), severity=hou.severityType.Error)
+        hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e), severity=hou.severityType.Error)
         return
     except WrongKeyError as e:
         hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
