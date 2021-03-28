@@ -1,1 +1,1 @@
-import QDoubleInputDialog
+#from . import QDoubleInputDialog
