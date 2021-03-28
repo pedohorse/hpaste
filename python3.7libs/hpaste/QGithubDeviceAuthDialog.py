@@ -1,7 +1,7 @@
 import re
 import json
-import urllib2
-from nethelper import urlopen_nt
+from urllib import request
+from .nethelper import urlopen_nt
 try:
     from PySide2.QtWidgets import QDialog, QVBoxLayout, QLabel, QSizePolicy, QPushButton, QMessageBox
     from PySide2.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
@@ -51,7 +51,7 @@ class QGithubDeviceAuthDialog(QDialog):
 
         # init auth process
         self.__client_id = client_id
-        self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/json', 'Content-Type': 'application/json'}
+        self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/json', 'charset': 'utf-8', 'Content-Type': 'application/json'}
         self.__hint_username = hint_username
 
         self.__webprofile = None
@@ -65,12 +65,12 @@ class QGithubDeviceAuthDialog(QDialog):
     def reinit_code(self):
         reqdata = {'client_id': self.__client_id,
                    'scope': 'gist'}
-        req = urllib2.Request('https://github.com/login/device/code', data=json.dumps(reqdata), headers=self.__headers)
+        req = request.Request('https://github.com/login/device/code', data=json.dumps(reqdata).encode('UTF-8'), headers=self.__headers)
         req.get_method = lambda: 'POST'
         code, ret = urlopen_nt(req)
         if code != 200:
             raise RuntimeError('code %d when trying to register device' % code)
-        init_data = json.loads(ret.read())
+        init_data = json.loads(ret.read().decode('UTF-8'))
         print(init_data)
         self.__device_code = init_data['device_code']
         self.__interval = init_data.get('interval', 5)
@@ -92,21 +92,21 @@ class QGithubDeviceAuthDialog(QDialog):
             reqdata = {'client_id': self.__client_id,
                        'device_code': self.__device_code,
                        'grant_type': 'urn:ietf:params:oauth:grant-type:device_code'}
-            req = urllib2.Request('https://github.com/login/oauth/access_token', data=json.dumps(reqdata), headers=self.__headers)
+            req = request.Request('https://github.com/login/oauth/access_token', data=json.dumps(reqdata).encode('UTF-8'), headers=self.__headers)
             req.get_method = lambda: 'POST'
             code, ret = urlopen_nt(req)
             if code == 200:
-                rep = json.loads(ret.read())
+                rep = json.loads(ret.read().decode('UTF-8'))
                 print(rep)
                 if 'error' not in rep:  # a SUCC
                     headers = {'User-Agent': 'HPaste',
                                 'Authorization': 'Token %s' % rep['access_token'],
                                 'Accept': 'application/vnd.github.v3+json'}
-                    req = urllib2.Request(r'https://api.github.com/user', headers=headers)
+                    req = request.Request(r'https://api.github.com/user', headers=headers)
                     usercode, userrep = urlopen_nt(req)
                     if usercode != 200:
                         raise RuntimeError('could not probe! %d' % (usercode,))
-                    userdata = json.loads(userrep.read())
+                    userdata = json.loads(userrep.read().decode('UTF-8'))
                     print(userdata)
 
                     self.__result = {'token': rep['access_token'],
@@ -182,7 +182,7 @@ if __name__ == '__main__':  # testing
     from PySide2.QtWidgets import QApplication
     qapp = QApplication(sys.argv)
     # w = QWebAuthDialog('https://www.google.com', r'https://www.google.com/search\?(.*)')
-    webauthstate = ''.join(random.choice(string.ascii_letters) for _ in xrange(32))
+    webauthstate = ''.join(random.choice(string.ascii_letters) for _ in range(32))
     webauthparms = {'client_id': '42e8e8e9d844e45c2d05',
                     'redirect_uri': 'https://github.com/login/oauth/success',
                     'scope': 'gist',
