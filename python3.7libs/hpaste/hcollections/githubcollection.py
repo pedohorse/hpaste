@@ -1,4 +1,4 @@
-import urllib2
+from urllib import request, error
 import json
 import copy
 
@@ -6,7 +6,7 @@ import re
 import base64
 
 from ..nethelper import urlopen_nt
-from collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError, \
+from .collectionbase import CollectionBase,CollectionItem,CollectionInconsistentError,CollectionSyncError,CollectionItemInvalidError, \
 	CollectionReadonlyError
 from ..logger import defaultLogger as log
 
@@ -18,9 +18,7 @@ try:
 	from PySide2.QtCore import QBuffer, QByteArray
 	qtAvailable = True
 except ImportError:
-	from PySide.QtGui import QPixmap
-	from PySide.QtCore import QBuffer, QByteArray
-	qtAvailable = True
+	pass
 
 
 class InvalidToken(CollectionSyncError):
@@ -48,18 +46,18 @@ globalIconCacher = Cacher()
 
 class GithubCollection(CollectionBase):
 	def __init__(self, token_or_username, public=False, token_for_public_access=None):
-		assert isinstance(token_or_username,str) or isinstance(token_or_username,unicode), 'token must be a str'
+		assert isinstance(token_or_username, str), 'token must be a str'
 
 		if(public):
 			self.__token = None
-			self.__headers = {'User-Agent': 'HPaste', 'Accept': 'application/vnd.github.v3+json'}
+			self.__headers = {'User-Agent': 'HPaste', 'charset': 'utf-8', 'Accept': 'application/vnd.github.v3+json'}
 			if(token_for_public_access is not None):
 				self.__headers['Authorization']='Token %s'%token_for_public_access
 			self.__readonly = True
 			self.__name=token_or_username
 		else:
 			self.__token=str(token_or_username)
-			self.__headers = {'User-Agent': 'HPaste', 'Authorization':'Token %s'%self.__token, 'Accept': 'application/vnd.github.v3+json'}
+			self.__headers = {'User-Agent': 'HPaste', 'charset': 'utf-8', 'Authorization':'Token %s'%self.__token, 'Accept': 'application/vnd.github.v3+json'}
 			self.__readonly = False
 
 			#if token is bad - we will be thrown from here with InvalidToken exception
@@ -76,16 +74,16 @@ class GithubCollection(CollectionBase):
 
 	def _rescanName(self):
 		if(self.__readonly):return
-		req=urllib2.Request(r'https://api.github.com/user',headers=self.__headers)
+		req=request.Request(r'https://api.github.com/user',headers=self.__headers)
 		try:
 			code, rep=urlopen_nt(req)
-		except urllib2.URLError as e:
+		except error.URLError as e:
 			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 200):
 			if(code==403):raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
-		data=json.loads(rep.read())
+		data=json.loads(rep.read().decode('UTF-8'))
 		self.__name=data['login']
 
 	def list(self):
@@ -97,10 +95,10 @@ class GithubCollection(CollectionBase):
 		gists = []
 		pagenum = 0
 		while True:
-			req=urllib2.Request(requrl,headers=self.__headers)
+			req=request.Request(requrl,headers=self.__headers)
 			try:
 				code, rep = urlopen_nt(req)
-			except urllib2.URLError as e:
+			except error.URLError as e:
 				raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 
 			repheaders = rep.info()
@@ -115,7 +113,7 @@ class GithubCollection(CollectionBase):
 						break # TODO: postpone this and retry later!
 				raise CollectionSyncError("unexpected server return level %d" % code)
 
-			data = json.loads(rep.read())
+			data = json.loads(rep.read().decode('UTF-8'))
 			gists += [x for x in data if '00_HPASTE_SNIPPET' in x['files']]
 
 			if 'link' in repheaders:
@@ -171,7 +169,7 @@ class GithubCollection(CollectionBase):
 				if len(verfiles) != 1:
 					log("skipping a broken collection item, id:%s" % gist['id'], 2)
 					continue
-				ver = map(lambda x: int(x), verfiles[0].split(':', 1)[1].split('.'))
+				ver = [int(x) for x in verfiles[0].split(':', 1)[1].split('.')]
 				if ver[0] != currentVersion[0]:
 					log("unsupported collection item version, id:%s" % gist['id'], 2)
 					continue
@@ -201,10 +199,10 @@ class GithubCollection(CollectionBase):
 						if url in globalIconCacher:
 							data = globalIconCacher[url]
 						else:
-							req = urllib2.Request(url, headers=self.__headers)
+							req = request.Request(url, headers=self.__headers)
 							try:
 								code, rep = urlopen_nt(req)
-							except urllib2.URLError as e:
+							except error.URLError as e:
 								raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 							if (code != 200):
 								if code == 403: raise InvalidToken('github auth failed')
@@ -242,16 +240,16 @@ class GithubCollection(CollectionBase):
 		#this should bring the raw content of the collection item.
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
 
-		req=urllib2.Request(item.metadata()['raw_url'],headers=self.__headers)
+		req=request.Request(item.metadata()['raw_url'],headers=self.__headers)
 		try:
 			code, rep = urlopen_nt(req)
-		except urllib2.URLError as e:
+		except error.URLError as e:
 			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if(code!=200):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
-		data=rep.read()
+		data=rep.read().decode('UTF-8')
 
 		return data
 
@@ -261,26 +259,26 @@ class GithubCollection(CollectionBase):
 	def updateItemIfNeeded(self, item):
 		ver = tuple(item.metadata().get('ver', (1, 0)))
 		if ver < currentVersion:  # TODO: put it into separate method
-			log("upgrading collection item version to %s" % '.'.join(map(lambda x: str(x), currentVersion)))
+			log("upgrading collection item version to %s" % '.'.join([str(x) for x in currentVersion]))
 			# if it's bigger but was still loadable - we don't change anything
 			# For now we only know how to update 1.0 to 1.1
 			if currentVersion == (1, 1):  # just in case i up the version and forget to change updater
 				# we know exactly what's missing, so we just fix things, no checkings required
 				id, filename = item.id().split('@', 1)
-				data = {'files': {'ver:%s' % '.'.join(map(lambda x: str(x), currentVersion)): {'content': '==='}}}
+				data = {'files': {'ver:%s' % '.'.join([str(x) for x in currentVersion]): {'content': '==='}}}
 				# ver 1.0 does not have ver: file, so we don't delete anything
 				data['files'][filename] = {'filename': 'item:' + filename}
 
-				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
 				try:
 					code, rep = urlopen_nt(req)
-				except urllib2.URLError as e:
+				except error.URLError as e:
 					raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 				if (code != 200):
 					if (code == 403): raise InvalidToken('github auth failed')
 					raise CollectionSyncError("unexpected server return level %d" % code)
-				gist = json.loads(rep.read())
+				gist = json.loads(rep.read().decode('UTF-8'))
 
 				itemfileanmes = [x for x in gist['files'].keys() if x.startswith("item:")]
 				if len(itemfileanmes) != 1: raise CollectionInconsistentError('something went wrong during item version update: could not find unique item data in gist')
@@ -299,7 +297,7 @@ class GithubCollection(CollectionBase):
 				item._access = CollectionItem.AccessType.public if gist['public'] else CollectionItem.AccessType.private
 				item._readonly = False
 			else:
-				raise NotImplemented("version upgrade to %s is not implemented!" % '.'.join(map(lambda x: str(x), currentVersion)))
+				raise NotImplemented("version upgrade to %s is not implemented!" % '.'.join([str(x) for x in currentVersion]))
 
 	def changeItem(self, item, newName=None, newDescription=None, newContent=None, newAccess=None, metadataChanges=None):
 		assert isinstance(item, CollectionItem), 'item must be a collection item'
@@ -321,11 +319,11 @@ class GithubCollection(CollectionBase):
 			id, filename = newitem.id().split('@', 1)
 			if 'iconpixmap' in item.metadata() and 'iconfullname' in item.metadata() and 'icondata' in item.metadata():
 				data = {'files':{item.metadata()['iconfullname']:{'content':item.metadata()['icondata']}}}
-				req = urllib2.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
 				try:
 					code, rep = urlopen_nt(req)
-				except urllib2.URLError as e:
+				except error.URLError as e:
 					raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 				if (code != 200):
 					if (code == 403): raise InvalidToken('github auth failed')
@@ -371,17 +369,17 @@ class GithubCollection(CollectionBase):
 			proceed=True
 
 		if proceed:
-			req=urllib2.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
+			req=request.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
 			req.get_method=lambda : 'PATCH'
 			try:
 				code, rep = urlopen_nt(req)
-			except urllib2.URLError as e:
+			except error.URLError as e:
 				raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 			if (code != 200):
 				if (code == 403): raise InvalidToken('github auth failed')
 				raise CollectionSyncError("unexpected server return level %d" % code)
 
-			gist=json.loads(rep.read())
+			gist=json.loads(rep.read().decode('UTF-8'))
 			newfilenames=gist['files'].keys()
 			newfilenames.remove('00_HPASTE_SNIPPET')
 			if(len(newfilenames) == 1):
@@ -414,11 +412,11 @@ class GithubCollection(CollectionBase):
 				if pix is None:  # removing pixmap
 					if 'iconpixmap' in item.metadata():
 						data = {'files':{item.metadata()['iconfullname']:None}}
-						req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data), headers=self.__headers)
+						req = request.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data), headers=self.__headers)
 						req.get_method = lambda: 'PATCH'
 						try:
 							code, rep = urlopen_nt(req)
-						except urllib2.URLError as e:
+						except error.URLError as e:
 							raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 						if (code != 200):
 							if (code == 403): raise InvalidToken('github auth failed')
@@ -442,16 +440,16 @@ class GithubCollection(CollectionBase):
 						data['files'][oldiconname]=None
 
 					data['files'][newiconname]={'content':imagedata}
-					req = urllib2.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
+					req = request.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
 					req.get_method = lambda: 'PATCH'
 					try:
 						code, rep = urlopen_nt(req)
-					except urllib2.URLError as e:
+					except error.URLError as e:
 						raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 					if (code != 200):
 						if (code == 403): raise InvalidToken('github auth failed')
 						raise CollectionSyncError("unexpected server return level %d" % code)
-					replydict = json.loads(rep.read())
+					replydict = json.loads(rep.read().decode('UTF-8'))
 
 					if newiconname not in replydict['files']:
 						raise CollectionSyncError("icon file was not uploaded properly")
@@ -467,8 +465,8 @@ class GithubCollection(CollectionBase):
 				item._meta[metakey] = metadataChanges[metakey]
 
 	def addItem(self,desiredName,description,content, access=CollectionItem.AccessType.private, metadata=None):
-		assert isinstance(desiredName,str) or isinstance(desiredName,unicode), 'name should be a string'
-		assert isinstance(content,str) or isinstance(content,unicode), 'conetnt shoud be a string'
+		assert isinstance(desiredName,str), 'name should be a string'
+		assert isinstance(content,str), 'conetnt shoud be a string'
 		assert access==0 or access==1, 'wrong access type'  #TODO there's no other type enforcement for this const for now
 
 		if(self.__readonly):raise CollectionReadonlyError('collection is opened as read-only!')
@@ -480,18 +478,18 @@ class GithubCollection(CollectionBase):
 		postdata = {'public': access==CollectionItem.AccessType.public, 'description': description}
 		postdata['files'] = {'00_HPASTE_SNIPPET': {'content': 'snippets marker'}}
 		postdata['files']['item:'+desiredName] = {'content':content}
-		postdata['files']['ver:%s' % '.'.join(map(lambda x:str(x), currentVersion))] = {'content':'==='}
+		postdata['files']['ver:%s' % '.'.join([str(x) for x in currentVersion])] = {'content':'==='}
 
-		req = urllib2.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
+		req = request.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
 		try:
 			code, rep = urlopen_nt(req)
-		except urllib2.URLError as e:
+		except error.URLError as e:
 			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 201):
 			if (code == 403): raise InvalidToken('github auth failed')
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
-		gist=json.loads(rep.read())
+		gist=json.loads(rep.read().decode('UTF-8'))
 		newfilenames = gist['files'].keys()
 		newfilenames.remove('00_HPASTE_SNIPPET')
 		if (len(newfilenames) == 1):
@@ -522,11 +520,11 @@ class GithubCollection(CollectionBase):
 
 		id, name = item.id().split('@', 1)
 
-		req = urllib2.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
+		req = request.Request(r'https://api.github.com/gists/%s'%id, headers=self.__headers)
 		req.get_method=lambda : 'DELETE'
 		try:
 			code, rep = urlopen_nt(req)
-		except urllib2.URLError as e:
+		except error.URLError as e:
 			raise CollectionSyncError('unable to reach collection: %s' % e.reason)
 		if (code != 204):
 			if (code == 403): raise InvalidToken('github auth failed')
@@ -540,7 +538,7 @@ if(__name__=='__main__'):
 
 	testToken = ''
 	with open(path.join(path.dirname(path.dirname(path.dirname(path.dirname(__file__)))), 'githubtoken.tok'),'r') as f:
-		testToken=f.read()
+		testToken=f.read().decode('UTF-8')
 		testToken=testToken.replace('\n','')
 	print(testToken)
 	col=GithubCollection(testToken)
