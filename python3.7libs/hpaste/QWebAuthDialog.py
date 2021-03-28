@@ -45,7 +45,7 @@ if __name__ == '__main__':  # testing
     from PySide2.QtWidgets import QApplication
     qapp = QApplication(sys.argv)
     # w = QWebAuthDialog('https://www.google.com', r'https://www.google.com/search\?(.*)')
-    webauthstate = ''.join(random.choice(string.ascii_letters) for _ in xrange(32))
+    webauthstate = ''.join(random.choice(string.ascii_letters) for _ in range(32))
     webauthparms = {'client_id': '42e8e8e9d844e45c2d05',
                     'redirect_uri': 'https://github.com/login/oauth/success',
                     'scope': 'gist',
@@ -59,5 +59,5 @@ if __name__ == '__main__':  # testing
     print(res == QWebAuthDialog.Accepted)
     print(w.get_result())
     if res == QWebAuthDialog.Accepted:
-        print w.get_result().groups()
+        print(w.get_result().groups())
     # qapp.exec_()
