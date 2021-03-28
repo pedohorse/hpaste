@@ -1,32 +1,28 @@
 import hou
 
-try:
-	from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
-	from PySide2.QtWidgets import QInputDialog,QMessageBox
-except ImportError:
-	from PySide.QtCore import Slot, QRegExp, Qt
-	from PySide.QtGui import QSortFilterProxyModel, QInputDialog, QMessageBox
+from PySide2.QtCore import Slot,QSortFilterProxyModel,QRegExp,Qt
+from PySide2.QtWidgets import QInputDialog,QMessageBox
 
-import hpaste
-from hcollections.collectionwidget import CollectionWidget
-from hcollections.collectionbase import CollectionSyncError,CollectionItem
-from hcollections.githubcollection import GithubCollection
-from hcollections.QDoubleInputDialog import QDoubleInputDialog
+from . import hpaste
+from .hcollections.collectionwidget import CollectionWidget
+from .hcollections.collectionbase import CollectionSyncError, CollectionItem
+from .hcollections.githubcollection import GithubCollection
+from .hcollections.QDoubleInputDialog import QDoubleInputDialog
 
-from logger import defaultLogger as log
+from .logger import defaultLogger as log
 
-import urllib2 #just for exception catching
+from urllib import error #just for exception catching
 
 #TODO: implement some kind of collection rescan
 
-from githubauthorizator import GithubAuthorizator
+from .githubauthorizator import GithubAuthorizator
 
 
 class HPasteCollectionWidget(object):
 	class __HPasteCollectionWidget(CollectionWidget):
 		def __init__(self, parent=None):
 			super(HPasteCollectionWidget.__HPasteCollectionWidget,self).__init__(parent, metadataExposedKeys=('raw_url','nettype'))
-			for x in xrange(1, 5):
+			for x in range(1, 5):
 				self.ui.mainView.horizontalHeader().hideSection(x)
 
 			self.__nepane=None
@@ -73,9 +69,9 @@ class HPasteCollectionWidget(object):
 					hou.node("/obj").setSelected(False,clear_all_selected=True)
 				hpaste.stringToNodes(item.content(), ne=self.__nepane, override_network_position=self.__savedNetworkViewPos)
 			except RuntimeWarning as e:
-				log('Warnings encountered during load:\n%s' % e.message, 2)
+				log('Warnings encountered during load:\n%s' % str(e), 2)
 			except Exception as e:
-				hou.ui.displayMessage("could not paste: %s"%e.message,severity=hou.severityType.Warning)
+				hou.ui.displayMessage("could not paste: %s" % str(e),severity=hou.severityType.Warning)
 
 
 		def _addItem(self,collection):
@@ -101,7 +97,7 @@ class HPasteCollectionWidget(object):
 				#print(hpaste.nodesToString(nodes))
 				self.model().addItemToCollection(collection,name,desc,hpaste.nodesToString(nodes),public, metadata={'nettype':self.__netType})
 			except CollectionSyncError as e:
-				QMessageBox.critical(self,'something went wrong!','Server error occured: %s'%e.message)
+				QMessageBox.critical(self,'something went wrong!','Server error occured: %s' % str(e))
 
 		def _changeAccess(self, index):
 			item = index.internalPointer()
@@ -125,7 +121,7 @@ class HPasteCollectionWidget(object):
 			try:
 				item.setContent(hpaste.nodesToString(nodes))
 			except CollectionSyncError as e:
-				QMessageBox.critical(self,'something went wrong!','Server error occured: %s'%e.message)
+				QMessageBox.critical(self,'something went wrong!','Server error occured: %s' % str(e))
 
 		def _itemInfo(self, index):
 			item=index.internalPointer()
@@ -171,11 +167,11 @@ class HPasteCollectionWidget(object):
 
 				elif action == 1 or (action == 2 and auth['enabled']):
 					if public:
-						self.addCollection(GithubCollection(auth['user'], public=True), async=True)  # TODO: reuse some token for public access
+						self.addCollection(GithubCollection(auth['user'], public=True), do_async=True)  # TODO: reuse some token for public access
 					else:
-						self.addCollection(GithubCollection(auth['token']), async=True)
+						self.addCollection(GithubCollection(auth['token']), do_async=True)
 			except CollectionSyncError as e:
-				QMessageBox.critical(self, 'something went wrong!', 'could not add/remove collection: %s' % e.message)
+				QMessageBox.critical(self, 'something went wrong!', 'could not add/remove collection: %s' % str(e))
 			finally:
 				self.__insideAuthCallback = False
 
@@ -214,13 +210,13 @@ class HPasteCollectionWidget(object):
 					for d in todel:
 						auths.remove(d)
 			except Exception as e:
-				hou.ui.displayMessage('Something went wrong.\n%s'%e.message)
+				hou.ui.displayMessage('Something went wrong.\n%s' % str(e))
 				HPasteCollectionWidget.__instance=None
 				raise
 
 			for auth in auths:
 				if auth['enabled']:
-					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']), async=True)
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(auth['token']), do_async=True)
 
 			#now public collections
 			cols=GithubAuthorizator.listPublicCollections()
@@ -233,12 +229,12 @@ class HPasteCollectionWidget(object):
 					if(len(auths)>0):
 						import random
 						ptkn=random.sample(auths,1)[0]['token']
-					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn), async=True)
+					HPasteCollectionWidget.__instance.addCollection(GithubCollection(col['user'], public=True, token_for_public_access=ptkn), do_async=True)
 				except Exception as e:
-					msg=''
-					if(isinstance(e,urllib2.HTTPError)): msg='code %d. %s'%(e.code,e.reason)
-					elif(isinstance(e,urllib2.URLError)): msg=e.reason
-					else: msg=e.message
+					msg = ''
+					if(isinstance(e, error.HTTPError)): msg = 'code %d. %s' % (e.code, e.reason)
+					elif(isinstance(e, error.URLError)): msg = e.reason
+					else: msg = str(e)
 					hou.ui.displayMessage('unable to load public collection %s: %s'%(col['user'],msg))
 
 			# set callback
