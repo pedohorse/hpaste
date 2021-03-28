@@ -7,6 +7,7 @@ from .nethelper import urlopen_nt
 from PySide2.QtWidgets import QMessageBox, QInputDialog
 from .QGithubDeviceAuthDialog import QGithubDeviceAuthDialog
 
+
 class GithubAuthorizator(object):
     ver = (1, 3)
     defaultdata = {'ver': '%d.%d' % ver, 'collections': [], 'publiccollections': []}
