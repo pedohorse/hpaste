@@ -28,7 +28,7 @@ class GitHub(WebClipBoardBase):
 		data['public'] = False
 		data['files'] = {'snippet.hou': {"content": s}}
 		try:
-			req = urllib2.Request(r'https://api.github.com/gists', json.dumps(data), headers=self.__headers)
+			req = urllib2.Request(r'https://api.github.com/gists', json.dumps(data).encode('UTF-8'), headers=self.__headers)
 			rep = urllib2.urlopen(req, timeout=30)
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + str(e.message))
