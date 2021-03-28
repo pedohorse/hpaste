@@ -3,16 +3,9 @@ if __name__ == '__main__':  # very old testing crap
 	os.environ['PATH'] = r'C:\Program Files\Side Effects Software\Houdini 16.0.600\bin' + r';C:\Program Files\Side Effects Software\Houdini 16.0.600\houdini\dso;' + os.environ['PATH']
 	os.environ['HOUDINI_USER_PREF_DIR'] = r'C:\Users\User\Documents\houdini16.0'
 
-
-qt5 = True
-try:
-	from PySide2.QtWidgets import *
-	from PySide2.QtGui import *
-	from PySide2.QtCore import *
-except:
-	qt5 = False
-	from PySide.QtCore import *
-	from PySide.QtGui import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+from PySide2.QtCore import *
 
 import time
 import random
@@ -34,7 +27,7 @@ class ConnectionCheckerThread(QThread):
 		return self.__result
 
 	def run(self):
-		s = ''.join([random.choice(string.ascii_letters) for x in xrange(2**15)])
+		s = ''.join([random.choice(string.ascii_letters) for x in range(2**15)])
 		try:
 			packer = self.__cls()
 			starttime = time.time()
@@ -107,16 +100,14 @@ class PluginListModel(QAbstractTableModel):
 				return checkres[0]
 		return None
 
-	def setData(self, index, value, role):
+	def setData(self, index, value, role=Qt.DisplayRole):
 		if role == Qt.EditRole:
 			className = self.data(index.sibling(index.row(), 1))
 			try:
 				hpasteoptions.setOption('hpasteweb.plugins.%s.speed_class' % className, value)
 
-				if qt5:
-					self.dataChanged.emit(index, index, [])
-				else:
-					self.dataChanged.emit(index, index)
+				self.dataChanged.emit(index, index, [])
+
 			except Exception as e:
 				print(e)
 				return False
@@ -128,8 +119,8 @@ class PluginListModel(QAbstractTableModel):
 		if index.column() == 0:
 			flags |= Qt.ItemIsEditable
 		return flags
-# SLOTS
 
+# SLOTS
 	@Slot(tuple)
 	def checkerReturned(self, res):
 		name, code, etime = res
@@ -147,10 +138,7 @@ class PluginListModel(QAbstractTableModel):
 		self._plist[row][2] = (code, etime)
 
 		index = self.index(row, 2)
-		if qt5:
-			self.dataChanged.emit(index, index, [])
-		else:
-			self.dataChanged.emit(index, index)
+		self.dataChanged.emit(index, index, [])
 
 
 class OptionsDialog(object):
@@ -177,10 +165,7 @@ class OptionsDialog(object):
 			self.ui_table.horizontalHeader().resizeSection(0, 56)
 			self.ui_table.horizontalHeader().resizeSection(1, 192)
 			self.ui_table.horizontalHeader().resizeSection(2, 92)
-			if qt5:
-				self.ui_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-			else:  # qt4
-				self.ui_table.horizontalHeader().setResizeMode(1, QHeaderView.Stretch)
+			self.ui_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 			# self.ui_table.horizontalHeader().setVisible(False)
 			self.ui_table.verticalHeader().setVisible(False)
 
@@ -188,7 +173,7 @@ class OptionsDialog(object):
 			self.ui_layout.addWidget(self.ui_resetButton)
 			self.ui_resetButton.clicked.connect(self.reset)
 
-			self.ui_hpastebox = QGroupBox("hpaste options",self)
+			self.ui_hpastebox = QGroupBox("hpaste options", self)
 			self.ui_hpastebox.setObjectName("hpasteBox")
 			self.ui_hpasteboxLayout = QVBoxLayout(self.ui_hpastebox)
 			self.ui_layout.addWidget(self.ui_hpastebox)
