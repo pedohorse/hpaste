@@ -1,24 +1,11 @@
 import os
 import json
-import urllib2
-import base64
-import socket
+from urllib import request
 import hou
 
-from nethelper import urlopen_nt
-from hcollections.QDoubleInputDialog import QDoubleInputDialog
-
-try:
-    from PySide2.QtWidgets import QMessageBox, QInputDialog
-except ImportError:
-    from PySide.QtGui import QMessageBox, QInputDialog
-
-#from QWebAuthDialog import QWebAuthDialog
-from QGithubDeviceAuthDialog import QGithubDeviceAuthDialog
-
-import random
-import string
-
+from .nethelper import urlopen_nt
+from PySide2.QtWidgets import QMessageBox, QInputDialog
+from .QGithubDeviceAuthDialog import QGithubDeviceAuthDialog
 
 class GithubAuthorizator(object):
     ver = (1, 3)
@@ -31,7 +18,7 @@ class GithubAuthorizator(object):
     __callbacks = []
 
     @classmethod
-    def readAuthorizationsFile(cls):
+    def readAuthorizationsFile(cls) -> dict:
         # reads the config file
         # if no config file - creates one
 
@@ -41,7 +28,7 @@ class GithubAuthorizator(object):
                 data = json.load(f)
             if 'ver' not in data:
                 raise RuntimeError('file is not good')
-            dmajor, dminor = map(lambda x: int(x), data['ver'].split('.'))
+            dmajor, dminor = [int(x) for x in data['ver'].split('.')]
             if dmajor != cls.ver[0]:
                 raise RuntimeError("authorization file's major version incompatible. you will have to delete the file and have it recreated from scratch")
             if dminor < cls.ver[1]:
@@ -229,7 +216,7 @@ class GithubAuthorizator(object):
         # TODO: probably make a dedicatid class
         headers = {'User-Agent': 'HPaste', 'Authorization': 'Token %s' % auth['token'],
                    'Accept': 'application/vnd.github.v3+json'}
-        req = urllib2.Request(r'https://api.github.com/user', headers=headers)
+        req = request.Request(r'https://api.github.com/user', headers=headers)
         code, rep = urlopen_nt(req)
 
         return code == 200
