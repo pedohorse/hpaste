@@ -1,16 +1,5 @@
-if(__name__=='__main__'):
-	import os
-	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
-	try:
-		from PySide2.QtCore import *
-	except ImportError:
-		from PySide.QtCore import *
 
-try:
-	from PySide2.QtWidgets import *
-except ImportError:
-	from PySide.QtGui import *
-
+from PySide2.QtWidgets import *
 
 class QDoubleInputDialog(QDialog):
 	def __init__(self,parent=None):
@@ -92,15 +81,3 @@ class QDoubleInputDialog(QDialog):
 
 		res = dialog.exec_()
 		return (dialog.ui_line1.text(), dialog.ui_line2.text(), dialog.ui_checkbox.isChecked(), res)
-
-
-if(__name__=='__main__'):
-	import sys
-	#testing here
-	QCoreApplication.addLibraryPath(r'C:\Program Files\Side Effects Software\Houdini 16.0.600\bin\Qt_plugins')
-	qapp = QApplication(sys.argv)
-
-
-	#print(QDoubleInputDialog.getDoubleText(None,'woof','bark on me twice','first one','and the second one','bark1','bark2'))
-	print(QDoubleInputDialog.getDoubleTextCheckbox(None, 'woof', 'bark on me twice', 'first one', 'and the second one', 'check this', 'bark1', 'bark2', True))
-	#sys.exit(qapp.exec_())
