@@ -1,36 +1,15 @@
-if(__name__=='__main__'):
-	import os
-	import sys
-	os.environ['PATH']=r'C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'+r';C:\Program Files\Side Effects Software\Houdini 16.0.600\houdini\dso;'+os.environ['PATH']
-	os.environ['HOUDINI_USER_PREF_DIR']=r'C:\Users\User\Documents\houdini16.0'
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
+from PySide2.QtCore import *
 
+from . import accountsmanager_ui
 
-	#print sys.path
-	from hcollections.QDoubleInputDialog import QDoubleInputDialog
-
-qt5 = True
-try:
-	from PySide2.QtWidgets import *
-	from PySide2.QtGui import *
-	from PySide2.QtCore import *
-except:
-	qt5 = False
-	from PySide.QtCore import *
-	from PySide.QtGui import *
-
-try:
-	import accountsmanager_ui
-except ImportError:
-	import accountsmanager_ui4 as accountsmanager_ui
-
-from githubauthorizator import GithubAuthorizator
-
+from .githubauthorizator import GithubAuthorizator
 
 class QStringCheckboxListModel(QAbstractListModel):
 	def __init__(self, parent=None):
 		super(QStringCheckboxListModel, self).__init__(parent)
 		self.__items = []
-
 
 	def data(self, index, role):
 		if (not index.isValid()): return None
@@ -51,10 +30,7 @@ class QStringCheckboxListModel(QAbstractListModel):
 		if (not index.isValid()): return False
 		if (role == Qt.CheckStateRole):
 			self.__items[index.row()][0] = value
-			if (qt5):
-				self.dataChanged.emit(index, index, [])
-			else:
-				self.dataChanged.emit(index, index)
+			self.dataChanged.emit(index, index, [])
 			return True
 		return False
 
