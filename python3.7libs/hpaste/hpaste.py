@@ -20,8 +20,11 @@ try:
 	from . import hpasteoptions as opt
 except:
 	print("Hpaste: Failed to load options, using defaults")
-# for debug
-# from pprint import pprint
+
+try:
+	from typing import Callable, Tuple, Optional
+except ImportError:
+	pass
 
 
 current_format_version = (2, 2)
@@ -88,37 +91,37 @@ def getChildContext(node, houver):
 		raise RuntimeError("unsupported houdini version!")
 
 
-def getSerializer(enctype=None, **kwargs):
+def getSerializer(enctype: Optional[str] = None, **kwargs) -> Tuple[Optional[dict], Callable[[bytes], bytes]]:  # TODO: makes more sense for serializer to return str
 	rng = CRandom.new()
 	if enctype == 'AES':
 		key = kwargs['key']
 		mode = kwargs.get('mode', AES.MODE_CBC)
 		iv = kwargs.get('iv', rng.read(AES.block_size))
-		magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
+		magic_footer = (b'--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 
-		def _ser(x):
+		def _ser(x: bytes):
 			enc = AES.new(key, mode, iv)
 			xsize = len(x)
-			xbytes = ''.join((struct.pack('>Q', xsize), x))
+			xbytes = b''.join((struct.pack('>Q', xsize), x))
 			rng = CRandom.new()
 			pad = rng.read(AES.block_size - len(xbytes) % AES.block_size)
-			return base64.b64encode(enc.encrypt(''.join((xbytes, pad, magic_footer))))
+			return base64.b64encode(enc.encrypt(b''.join((xbytes, pad, magic_footer))))
 
-		return {'iv': base64.b64encode(iv), 'mode': mode}, _ser
+		return {'iv': base64.b64encode(iv).decode('UTF-8'), 'mode': mode}, _ser
 	elif enctype is None or enctype.lower() == 'none':
 		return None, lambda x: base64.b64encode(x)
 	else:
 		raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
-def getDeserializer(enctype=None, **kwargs):
+def getDeserializer(enctype: Optional[str] = None, **kwargs) -> Callable[[bytes], bytes]:
 	if enctype == 'AES':
 		key = kwargs['key']
 		if key is None:
 			raise NoKeyError('no decryption key provided for encryption type AES')
 		mode = kwargs['mode']
-		iv = base64.b64decode(kwargs['iv'])
-		magic_footer = ('--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
+		iv = base64.b64decode(kwargs['iv'].encode('UTF-8'))
+		magic_footer = (b'--===E)*(3===--.' * (AES.block_size // 16 + int(AES.block_size % 16 > 0)))[:AES.block_size]
 
 		def _deser(x):
 			try:
