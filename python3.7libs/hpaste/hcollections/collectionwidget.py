@@ -147,8 +147,8 @@ class SnippetCollectionModel(QAbstractTableModel):
 		# TODO: check pending collections too!
 		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str), 'collection must be a collection, or a string'
 		if isinstance(collection, str):
-			matchcollections = filter(lambda x: x.name() == collection, self.__collections)
-			matchcollections += filter(lambda x: x.name() == collection, self.__asyncProcessedCollections.keys())
+			matchcollections = [x for x in self.__collections if x.name() == collection]
+			matchcollections += [x for x in self.__asyncProcessedCollections.keys() if x.name() == collection]
 		else:
 			if collection in self.__collections or collection in self.__asyncProcessedCollections.keys():
 				matchcollections = [collection]
