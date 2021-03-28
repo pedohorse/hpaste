@@ -1,19 +1,13 @@
-if(__name__=='__main__'):
-	import os
-	os.environ['PATH']+=r';C:\Program Files\Side Effects Software\Houdini 16.0.600\bin'
-
 from ..logger import defaultLogger as log
 
-try:
-	from PySide2.QtCore import *
-	from PySide2.QtWidgets import *
-	from PySide2.QtGui import *
-except ImportError:
-	from PySide.QtCore import *
-	from PySide.QtGui import *
-from QDropdownWidget import QDropdownWidget
+from PySide2.QtCore import *
+from PySide2.QtWidgets import *
+from PySide2.QtGui import *
 
-import collectionbase
+from .QDropdownWidget import QDropdownWidget
+
+from . import collectionbase
+
 
 class CollectionListerThread(QThread):
 	workdone = Signal(tuple)
@@ -47,7 +41,7 @@ class CollectionListerThread(QThread):
 			self.__stopMutex.lock()  # TODO: so much more python-style to wrap this mutex into a with-statement
 			try:
 				if not self.__skip:
-					self.workerror.emit((self.__collection, "Error listing the collection: %s" % e.message))
+					self.workerror.emit((self.__collection, "Error listing the collection: %s" % str(e)))
 					self.__emitted = True
 			except:
 				pass
@@ -151,9 +145,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 		:return: True on success, False in case not all matching collections were deleted due to threading issues. in case of big errors - raises
 		"""
 		# TODO: check pending collections too!
-		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str) or isinstance(collection, unicode), 'collection must be a collection, or a string'
-		if isinstance(collection, unicode):
-			collection=str(collection)
+		assert isinstance(collection, collectionbase.CollectionBase) or isinstance(collection, str), 'collection must be a collection, or a string'
 		if isinstance(collection, str):
 			matchcollections = filter(lambda x: x.name() == collection, self.__collections)
 			matchcollections += filter(lambda x: x.name() == collection, self.__asyncProcessedCollections.keys())
@@ -222,7 +214,7 @@ class SnippetCollectionModel(QAbstractTableModel):
 
 		self.beginRemoveRows(parent, row,lastrow)
 		everythingIsBad=False
-		for i in xrange(count):
+		for i in range(count):
 			try:
 				if(affectCollections): self.__itemList[row+i].removeSelf()
 				else: self.__itemList[row+i].invalidate()
@@ -352,13 +344,13 @@ class CollectionWidget(QDropdownWidget):
 		self.model().rescanCollections()
 
 
-	def addCollection(self, collection, async=False):
+	def addCollection(self, collection, do_async=False):
 		"""
 		shortcut to self.model().addCollection()
 		:collection: collection to add
 		:return:
 		"""
-		if async:
+		if do_async:
 			self.model().addCollectionAsync(collection)
 		else:
 			self.model().addCollection(collection)
@@ -501,7 +493,7 @@ if(__name__=='__main__'):
 	class FakeCollection(collectionbase.CollectionBase):
 		def __init__(self):
 			super(FakeCollection,self).__init__()
-			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat %s'%(x*2),'testnoid',x%2,x%4<2,metadata={'raw_url':'https://fuck','nettype':'WOOF'}) for x in xrange(100)]
+			self.__coll=[collectionbase.CollectionItem(self,'item %s'%x,'fat %s'%(x*2),'testnoid',x%2,x%4<2,metadata={'raw_url':'https://fuck','nettype':'WOOF'}) for x in range(100)]
 
 		def name(self):
 			return 'testname'
