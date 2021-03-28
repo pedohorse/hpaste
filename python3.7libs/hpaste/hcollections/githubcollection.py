@@ -269,7 +269,7 @@ class GithubCollection(CollectionBase):
 				# ver 1.0 does not have ver: file, so we don't delete anything
 				data['files'][filename] = {'filename': 'item:' + filename}
 
-				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data).encode('UTF-8'), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
 				try:
 					code, rep = urlopen_nt(req)
@@ -318,8 +318,8 @@ class GithubCollection(CollectionBase):
 			# icon:
 			id, filename = newitem.id().split('@', 1)
 			if 'iconpixmap' in item.metadata() and 'iconfullname' in item.metadata() and 'icondata' in item.metadata():
-				data = {'files':{item.metadata()['iconfullname']:{'content':item.metadata()['icondata']}}}
-				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data), headers=self.__headers)
+				data = {'files':{item.metadata()['iconfullname']:{'content': item.metadata()['icondata'].decode('UTF-8')}}}  # not that icondata IS in ascii range already. TODO: ensure and make it more obvious
+				req = request.Request('https://api.github.com/gists/%s' % id, json.dumps(data).encode('UTF-8'), headers=self.__headers)
 				req.get_method = lambda: 'PATCH'
 				try:
 					code, rep = urlopen_nt(req)
@@ -369,7 +369,7 @@ class GithubCollection(CollectionBase):
 			proceed=True
 
 		if proceed:
-			req=request.Request('https://api.github.com/gists/%s'%id,json.dumps(data), headers = self.__headers)
+			req=request.Request('https://api.github.com/gists/%s'%id,json.dumps(data).encode('UTF-8'), headers = self.__headers)
 			req.get_method=lambda : 'PATCH'
 			try:
 				code, rep = urlopen_nt(req)
@@ -380,7 +380,7 @@ class GithubCollection(CollectionBase):
 				raise CollectionSyncError("unexpected server return level %d" % code)
 
 			gist=json.loads(rep.read().decode('UTF-8'))
-			newfilenames=gist['files'].keys()
+			newfilenames=list(gist['files'].keys())
 			newfilenames.remove('00_HPASTE_SNIPPET')
 			if(len(newfilenames) == 1):
 				newfilename=newfilenames[0]
@@ -412,7 +412,7 @@ class GithubCollection(CollectionBase):
 				if pix is None:  # removing pixmap
 					if 'iconpixmap' in item.metadata():
 						data = {'files':{item.metadata()['iconfullname']:None}}
-						req = request.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data), headers=self.__headers)
+						req = request.Request('https://api.github.com/gists/%s' % item.id().split('@', 1)[0], json.dumps(data).encode('UTF-8'), headers=self.__headers)
 						req.get_method = lambda: 'PATCH'
 						try:
 							code, rep = urlopen_nt(req)
@@ -429,7 +429,7 @@ class GithubCollection(CollectionBase):
 					barr = QByteArray()
 					buff = QBuffer(barr)
 					pix.save(buff, "PNG")
-					imagedata = base64.b64encode(barr.data())
+					imagedata = base64.b64encode(barr.data()).decode('UTF-8')
 					buff.deleteLater()
 
 					oldiconname = item.metadata().get('iconfullname', None)
@@ -440,7 +440,7 @@ class GithubCollection(CollectionBase):
 						data['files'][oldiconname]=None
 
 					data['files'][newiconname]={'content':imagedata}
-					req = request.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data), headers=self.__headers)
+					req = request.Request('https://api.github.com/gists/%s' % item.id().split('@',1)[0], json.dumps(data).encode('UTF-8'), headers=self.__headers)
 					req.get_method = lambda: 'PATCH'
 					try:
 						code, rep = urlopen_nt(req)
@@ -480,7 +480,7 @@ class GithubCollection(CollectionBase):
 		postdata['files']['item:'+desiredName] = {'content':content}
 		postdata['files']['ver:%s' % '.'.join([str(x) for x in currentVersion])] = {'content':'==='}
 
-		req = request.Request(r'https://api.github.com/gists', json.dumps(postdata), headers=self.__headers)
+		req = request.Request(r'https://api.github.com/gists', json.dumps(postdata).encode('UTF-8'), headers=self.__headers)
 		try:
 			code, rep = urlopen_nt(req)
 		except error.URLError as e:
@@ -490,7 +490,7 @@ class GithubCollection(CollectionBase):
 			raise CollectionSyncError("unexpected server return level %d" % code)
 
 		gist=json.loads(rep.read().decode('UTF-8'))
-		newfilenames = gist['files'].keys()
+		newfilenames = list(gist['files'].keys())
 		newfilenames.remove('00_HPASTE_SNIPPET')
 		if (len(newfilenames) == 1):
 			newfilename = newfilenames[0]
