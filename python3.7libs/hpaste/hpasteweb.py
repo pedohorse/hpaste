@@ -6,7 +6,7 @@ import re  # to cleanup wid
 from .webclipboardbase import WebClipBoardWidNotFound
 
 
-def webPack(asciiText, pluginList=None, maxChunkSize=None):
+def webPack(asciiText: str, pluginList=None, maxChunkSize=None):
 	allPackids=[]
 	done = False
 
@@ -48,7 +48,7 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 	return '#'.join(allPackids)
 
 
-def webUnpack(wid, useCached=True, cache=None):
+def webUnpack(wid: str, useCached=True, cache=None):
 	#just a bit cleanup the wid first, in case it was copied with extra spaces
 	# strip witespaces, just to be sure
 	wid = wid.strip()

@@ -32,11 +32,11 @@ class HPaste(WebClipBoardBase):
 				print("WARNING: connected with unverified context")
 		return rep
 
-	def webPackData(self, s) -> str:
-		if isinstance(s, str):
-			s = s.encode('UTF-8')
+	def webPackData(self, s: str) -> str:
 		if len(s) > self.maxStringLength():
 			raise RuntimeError("len of s it too big for web clipboard currently")
+
+		s = s.encode('UTF-8')
 
 		try:
 			req = request.Request(r"https://hou-hpaste.herokuapp.com/documents", s, headers=self.__headers)
@@ -57,15 +57,14 @@ class HPaste(WebClipBoardBase):
 		assert isinstance(id, str)
 		return id
 
-
-	def webUnpackData(self, id: str) -> str:
+	def webUnpackData(self, wid: str) -> str:
 		#id = id.encode('UTF-8')
 		try:
-			req = request.Request(r"https://hou-hpaste.herokuapp.com/raw/" + id, headers=self.__headers)
+			req = request.Request(r"https://hou-hpaste.herokuapp.com/raw/" + wid, headers=self.__headers)
 			rep = self.urlopen(req, timeout=30)
 		except HTTPError as e:
 			if e.code == 404:
-				raise WebClipBoardWidNotFound(id)
+				raise WebClipBoardWidNotFound(wid)
 			raise RuntimeError("error connecting to web clipboard: " + repr(e))
 		except Exception as e:
 			raise RuntimeError("error/timeout connecting to web clipboard: " + repr(e))

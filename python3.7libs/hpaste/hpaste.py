@@ -124,7 +124,7 @@ def getDeserializer(enctype=None, **kwargs):
 			try:
 				enc = AES.new(key, mode, iv)
 			except ValueError as e:
-				if e.message.startswith('AES key must'):
+				if str(e).startswith('AES key must'):
 					raise WrongKeyLengthError('invalid key length!')
 				raise
 			xbytes = enc.decrypt(base64.b64decode(x))
@@ -139,7 +139,7 @@ def getDeserializer(enctype=None, **kwargs):
 		raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
-def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -> bytes:
+def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -> str:
 	"""
 		nodes : hou.NetworkMovableItems
 	algtype:
@@ -251,10 +251,10 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
 
 	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data).encode('UTF-8')))
 
-	return stringdata
+	return stringdata.decode('UTF-8')
 
 
-def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None, key=None):
+def stringToNodes(s: str, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None, key=None):
 	"""
 	TODO: here to be a docstring
 	:param s:
@@ -275,12 +275,11 @@ def stringToNodes(s, hou_parent=None, ne=None, ignore_hdas_if_already_defined=No
 		if opt is not None:
 			force_prefer_hdas = opt.getOption('hpaste.force_prefer_hdas', force_prefer_hdas)
 
-	if isinstance(s, str):
-		s = s.encode('UTF-8')  # ununicode. there should not be any unicode in it anyways
+	s = s.encode('UTF-8')  # ununicode. there should not be any unicode in it anyways
 	try:
 		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)).decode('UTF-8'))
 	except Exception as e:
-		raise RuntimeError("input data is either corrupted or just not a nodecode: " + str(e.message))
+		raise RuntimeError("input data is either corrupted or just not a nodecode: " + repr(e))
 
 	houver1 = hou.applicationVersion()
 

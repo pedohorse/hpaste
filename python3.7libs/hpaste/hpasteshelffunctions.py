@@ -27,7 +27,7 @@ def hcopyweb():
     key = None
     encparms = {}
     if enctype == 'AES-CBC':
-        key = ''.join([random.choice(string.ascii_letters + string.digits) for x in xrange(AES.block_size)])
+        key = ''.join([random.choice(string.ascii_letters + string.digits) for x in range(AES.block_size)])
         encparms = {'mode': AES.MODE_CBC}
         enctype = 'AES'
     elif enctype.lower() == 'none' or enctype == '':
@@ -40,20 +40,15 @@ def hcopyweb():
     try:
         s = nodesToString(nodes, encryption_type=enctype, key=key, **encparms)
     except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
+        hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
         return
-    except RuntimeWarning as e:  # da heck?
-        hou.ui.displayMessage("Warning: %s" % str(e.message), severity=hou.severityType.Warning)
-    #except Exception as e:
-    #    hou.ui.displayMessage("Internal Error: %s %s" % (str(type(e)), str(e.message)), severity=hou.severityType.Error)
-    #    return
 
     if isinstance(qapp, QApplication):
         qapp.setOverrideCursor(qtc.Qt.WaitCursor)
     try:
         s = webPack(s)
     except Exception as e:
-        hou.ui.displayMessage(e.message, severity=hou.severityType.Error, title='error')
+        hou.ui.displayMessage(str(e), severity=hou.severityType.Error, title='error')
         return
     finally:
         if isinstance(qapp, QApplication):
@@ -86,7 +81,7 @@ def hpasteweb(pane=None):
     try:
         s = webUnpack(s)
     except Exception as e:
-        hou.ui.displayMessage(e.message, severity=hou.severityType.Error, title='error')
+        hou.ui.displayMessage(str(e), severity=hou.severityType.Error, title='error')
         return
     finally:
         if isinstance(qapp, QApplication):
@@ -97,32 +92,27 @@ def hpasteweb(pane=None):
     except InvalidContextError as e:
         nec, snc = e.contexts()
         if snc == 'Sop' and nec == 'Object':
-            if hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
+            if hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
                 geonode = e.node().createNode('geo')
                 if pane is not None:
                     geonode.setPosition(pane.cursorPosition())
                 stringToNodes(s, hou_parent=geonode, key=key)
         else:
-            hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
+            hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
             return
     except WrongKeyLengthError as e:
-        hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e.message), severity=hou.severityType.Error)
+        hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
         return
     except NoKeyError as e:
         hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e.message), severity=hou.severityType.Error)
         return
     except WrongKeyError as e:
-        hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e.message), severity=hou.severityType.Error)
+        hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
         return
     except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s" % str(e.message), severity=hou.severityType.Error)
+        hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
         return
     except RuntimeWarning as e:
-        hou.ui.displayMessage("Warning: %s" % str(e.message), severity=hou.severityType.Warning)
-    #except Exception as e:
-    #    hou.ui.displayMessage("Internal Error: %s" % str(e.message), severity=hou.severityType.Error)
-    #    return
+        hou.ui.displayMessage("Warning: %s" % str(e), severity=hou.severityType.Warning)
+
     hou.ui.setStatusMessage("Success: Nodes pasted!")
-
-
-# hpasteweb(kwargs['pane'])

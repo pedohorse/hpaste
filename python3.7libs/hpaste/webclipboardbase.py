@@ -26,8 +26,8 @@ class WebClipBoardBase(object):
 		'''
 		raise NotImplementedError()
 
-	def webPackData(self, s):
+	def webPackData(self, s: str) -> str:
 		raise NotImplementedError()
 
-	def webUnpackData(self, s):
+	def webUnpackData(self, s: str) -> str:
 		raise NotImplementedError()

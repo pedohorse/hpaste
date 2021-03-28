@@ -18,8 +18,8 @@ import time
 import random
 import string
 import copy
-import hpastewebplugins as hpw
-import hpasteoptions
+from . import hpastewebplugins as hpw
+from . import hpasteoptions
 
 
 class ConnectionCheckerThread(QThread):
