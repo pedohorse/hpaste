@@ -246,7 +246,6 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
 	data['signed'] = False
 	data['signatureType'] = ''
 	data['signatureData'] = None
-	print(data)
 	# these suppose there is a trusted vendors list with their public keys stored
 
 	stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data).encode('UTF-8')))
