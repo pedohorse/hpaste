@@ -3,3 +3,4 @@
 **/*.pyc
 *token.tok
 venv
+venv3
