@@ -21,7 +21,7 @@ class WePaste(WebClipBoardBase):
 
 		lsmo = len(self.__symbols) - 1
 		id = ''
-		for i in xrange(size):
+		for i in range(size):
 			id += self.__symbols[random.randint(0, lsmo)]
 		return id
 
