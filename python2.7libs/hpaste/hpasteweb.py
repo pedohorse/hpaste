@@ -1,3 +1,4 @@
+import hou  # for ui only
 import hpastewebplugins
 import widcacher
 import random  # to shuffle plugins
@@ -20,6 +21,18 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
 			pluginClasses = []
 			for pname in pluginList:
 				pluginClasses += [x for x in hpastewebplugins.pluginClassList if x.__name__ == pname]
+
+		# sanity check
+		if len(asciiText) > 2**24:
+			if hou.isUiAvailable():
+				if hou.ui.displayMessage('you are about to save %d Mb into a snippet. This is HIGHLY DISCOURAGED!',
+										 buttons=('Proceed', 'Cancel'), default_choice=1, close_choice=1,
+										 severity=hou.severityType.Warning) != 0:
+					raise RuntimeError('snippet too big. cancelled')
+			else:
+				raise RuntimeError('snippet too big. cancelled')
+		#
+
 		cls = None
 		for cls in pluginClasses:
 			try:
