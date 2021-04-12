@@ -16,7 +16,7 @@ class HPaste(WebClipBoardBase):
 
     @classmethod
     def maxStringLength(cls):
-        return 400000
+        return 2**20
 
     @classmethod
     def urlopen(cls, url, timeout=30):
