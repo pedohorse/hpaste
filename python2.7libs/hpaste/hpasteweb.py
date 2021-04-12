@@ -11,6 +11,19 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
     allPackids=[]
     done = False
 
+    # sanity check
+    print('www', len(asciiText))
+    # raise RuntimeError('lelol')
+    if len(asciiText) > 2 ** 23:
+        if hou.isUIAvailable():
+            if hou.ui.displayMessage('you are about to save %d Mb into a snippet. This is HIGHLY DISCOURAGED!' % (len(asciiText) // 2 ** 20,),
+                                     buttons=('Proceed', 'Cancel'), default_choice=1, close_choice=1,
+                                     severity=hou.severityType.Warning) != 0:
+                raise RuntimeError('snippet too big. cancelled')
+        else:
+            raise RuntimeError('snippet too big. cancelled')
+    #
+
     while not done:
         packid = None
         if pluginList is None:
@@ -21,19 +34,6 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
             pluginClasses = []
             for pname in pluginList:
                 pluginClasses += [x for x in hpastewebplugins.pluginClassList if x.__name__ == pname]
-
-        # sanity check
-        print('www', len(asciiText))
-        raise('lelol')
-        if len(asciiText) > 2**24:
-            if hou.isUiAvailable():
-                if hou.ui.displayMessage('you are about to save %d Mb into a snippet. This is HIGHLY DISCOURAGED!',
-                                         buttons=('Proceed', 'Cancel'), default_choice=1, close_choice=1,
-                                         severity=hou.severityType.Warning) != 0:
-                    raise RuntimeError('snippet too big. cancelled')
-            else:
-                raise RuntimeError('snippet too big. cancelled')
-        #
 
         cls = None
         for cls in pluginClasses:
