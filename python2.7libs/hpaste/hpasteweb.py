@@ -12,8 +12,6 @@ def webPack(asciiText, pluginList=None, maxChunkSize=None):
     done = False
 
     # sanity check
-    print('www', len(asciiText))
-    # raise RuntimeError('lelol')
     if len(asciiText) > 2 ** 23:
         if hou.isUIAvailable():
             if hou.ui.displayMessage('you are about to save %d Mb into a snippet. This is HIGHLY DISCOURAGED!' % (len(asciiText) // 2 ** 20,),
