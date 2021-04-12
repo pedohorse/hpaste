@@ -1,3 +1,4 @@
+import hou  # for ui only
 from . import hpastewebplugins
 from . import widcacher
 import random  # to shuffle plugins
@@ -9,6 +10,17 @@ from .webclipboardbase import WebClipBoardWidNotFound
 def webPack(asciiText: str, pluginList=None, maxChunkSize=None):
     allPackids = []
     done = False
+
+    # sanity check
+    if len(asciiText) > 2 ** 23:
+        if hou.isUIAvailable():
+            if hou.ui.displayMessage('you are about to save %d Mb into a snippet. This is HIGHLY DISCOURAGED!' % (len(asciiText) // 2 ** 20,),
+                                     buttons=('Proceed', 'Cancel'), default_choice=1, close_choice=1,
+                                     severity=hou.severityType.Warning) != 0:
+                raise RuntimeError('snippet too big. cancelled')
+        else:
+            raise RuntimeError('snippet too big. cancelled')
+    #
 
     while not done:
         packid = None
