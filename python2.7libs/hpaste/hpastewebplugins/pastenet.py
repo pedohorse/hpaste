@@ -16,7 +16,7 @@ class PasteNet(WebClipBoardBase):
 
 	@classmethod
 	def maxStringLength(self):
-		return 65000 #shitty small!
+		return 65000 # very small!
 
 	def webPackData(self, s):
 		if (not isinstance(s, str)):

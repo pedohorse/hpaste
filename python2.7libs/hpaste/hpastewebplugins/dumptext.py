@@ -18,9 +18,9 @@ class DumpText(WebClipBoardBase):
 
 	def webPackData(self, s):
 		'''
-		this shit packs s into some internetclipboard, u r responsible for that s is web-acceptable
+		this function packs s into some internetclipboard, u r responsible for that s is web-acceptable
 		:param s: string, cool for web
-		:return: string id for that shitty site
+		:return: string id for that sketchy site
 		'''
 
 		# approximate limit
