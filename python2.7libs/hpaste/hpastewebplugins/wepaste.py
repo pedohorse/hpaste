@@ -17,7 +17,7 @@ class WePaste(WebClipBoardBase):
 	def genId(self, size=16):
 		if (not isinstance(size, int)): raise AttributeError("size must be int")
 		if (size < 1): raise RuntimeError("improper size")
-		if (size > 4096): raise RuntimeError("improper size, r u fucking with me?")
+		if (size > 4096): raise RuntimeError("improper size, i cannot take it!")
 
 		lsmo = len(self.__symbols) - 1
 		id = ''
@@ -35,9 +35,9 @@ class WePaste(WebClipBoardBase):
 
 	def webPackData(self, s):
 		'''
-		this shit packs s into some internetclipboard, u r responsible for that s is web-acceptable
+		this function packs s into some internetclipboard, u r responsible for that s is web-acceptable
 		:param s: string, cool for web
-		:return: string id for that shitty site
+		:return: string id for that site
 		'''
 		if (not isinstance(s, str)):
 			s = str(s)
@@ -57,7 +57,7 @@ class WePaste(WebClipBoardBase):
 			raise RuntimeError("timeout connecting to web clipboard: " + str(e.message))
 		if (rep.getcode() != 200): raise RuntimeError("error code from web clipboard")
 
-		# reading back... do we need it? just to check that we pasted shit properly
+		# reading back... do we need it? just to check that we pasted stuff properly
 		repstring = rep.read()
 		datastart = repstring.find('###===DATASTART===###')
 		if (datastart == -1):

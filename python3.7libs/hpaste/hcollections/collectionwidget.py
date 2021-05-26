@@ -380,7 +380,7 @@ class CollectionWidget(QDropdownWidget):
     def _addItem(self, collection):
         log('_addItem should be reimplemented in subclass to do what is needed in any specific situation', 3)
 
-    # not raising cuz this is called deep through signal-slot mech, that cause exceptions to be fucked somewhere on the way
+    # not raising cuz this is called deep through signal-slot mech, that cause exceptions to be f*cked somewhere on the way
     # raise NotImplementedError('This method should be overriden in subclasses to implement desired behaviour')
 
     def _itemInfo(self, index):
@@ -502,7 +502,7 @@ if __name__ == '__main__':
     class FakeCollection(collectionbase.CollectionBase):
         def __init__(self):
             super(FakeCollection, self).__init__()
-            self.__coll = [collectionbase.CollectionItem(self, 'item %s' % x, 'fat %s' % (x * 2), 'testnoid', x % 2, x % 4 < 2, metadata={'raw_url': 'https://fuck', 'nettype': 'WOOF'}) for x in range(100)]
+            self.__coll = [collectionbase.CollectionItem(self, 'item %s' % x, 'fat %s' % (x * 2), 'testnoid', x % 2, x % 4 < 2, metadata={'raw_url': 'https://fork', 'nettype': 'WOOF'}) for x in range(100)]
 
         def name(self):
             return 'testname'
@@ -517,14 +517,8 @@ if __name__ == '__main__':
 
     import sys
 
-    QCoreApplication.addLibraryPath(r'C:\Program Files\Side Effects Software\Houdini 16.0.600\bin\Qt_plugins')
     qapp = QApplication(sys.argv)
 
-    # testToken = ''
-    # with open(path.join(path.dirname(path.dirname(path.dirname(__file__))), 'githubtoken.tok'), 'r') as f:
-    #	testToken = f.read()
-    #	testToken = testToken.replace('\n', '')
-    # print(testToken)
     col = FakeCollection()
 
     wid = CollectionWidget(metadataExposedKeys=('raw_url', 'nettype'))
