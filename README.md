@@ -26,9 +26,9 @@ this plugin is built to only use standard system modules and standard houdini mo
 1. Download the contents of this repository as ZIP
 2. Unzip the contents of the archive (which is automatically created by github folder `hpaste-master`)
    into your user folder (for ex `C:\Users\<USER>\Documents\houdini18.5\`)  
-   so as a result you will have `C:\Users\<USER>\Documents\houdini16.5\hpaste-master`
+   so as a result you will have `C:\Users\<USER>\Documents\houdini18.5\hpaste-master`
 3. Pick one file `hpaste.json` from there and move it into `packages` folder of your houdini user directory  (create it if it does not exist)  
-   for ex. the full path will look like `C:\Users\<USER>\Documents\houdini16.5\packages\hpaste.json`
+   for ex. the full path will look like `C:\Users\<USER>\Documents\houdini18.5\packages\hpaste.json`
 4. Enjoy!
 
 #### legacy variant
