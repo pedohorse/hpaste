@@ -63,28 +63,34 @@ def do(pane):
     else:
         qapp = QApplication.instance()
         s = qapp.clipboard().text()
-    
-    try:
-        hpaste.stringToNodes(s, ne=pane)
-    except hpaste.InvalidContextError as e:
-        nec, snc = e.contexts()
-        if snc == 'Sop' and nec == 'Object':
-            if hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
-                geonode = e.node().createNode('geo')
-                if pane is not None:
-                    geonode.setPosition(pane.cursorPosition())
-                hpaste.stringToNodes(s, hou_parent=geonode)
-        else:
+
+    geonode = None
+    for _ in range(2):
+        try:
+            hpaste.stringToNodes(s, ne=pane, hou_parent=geonode)
+        except hpaste.InvalidContextError as e:
+            nec, snc = e.contexts()
+            if snc == 'Sop' and nec == 'Object':
+                if hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
+                    if geonode is not None:
+                        raise RuntimeError('are we in an infinite loop?')
+                    geonode = e.node().createNode('geo')
+                    if pane is not None:
+                        geonode.setPosition(pane.cursorPosition())
+                    pane = None
+                    continue
+            else:
+                hou.ui.displayMessage("Error: %s"%str(e),severity=hou.severityType.Error)
+                return
+        except RuntimeError as e:
             hou.ui.displayMessage("Error: %s"%str(e),severity=hou.severityType.Error)
             return
-    except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s"%str(e),severity=hou.severityType.Error)
-        return
-    except RuntimeWarning as e:
-        hou.ui.displayMessage("Warning: %s"%str(e),severity=hou.severityType.Warning)
-    except Exception as e:
-        hou.ui.displayMessage("Internal Error: %s"%str(e),severity=hou.severityType.Error)
-        return
+        except RuntimeWarning as e:
+            hou.ui.displayMessage("Warning: %s"%str(e),severity=hou.severityType.Warning)
+        except Exception as e:
+            hou.ui.displayMessage("Internal Error: %s"%str(e),severity=hou.severityType.Error)
+            return
+        break
 
 do(kwargs['pane'])
 ]]></script>

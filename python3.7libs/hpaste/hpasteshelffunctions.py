@@ -83,32 +83,38 @@ def hpasteweb(pane=None):
         if isinstance(qapp, QApplication):
             qapp.restoreOverrideCursor()
 
-    try:
-        stringToNodes(s, ne=pane, key=key)
-    except InvalidContextError as e:
-        nec, snc = e.contexts()
-        if snc == 'Sop' and nec == 'Object':
-            if hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
-                geonode = e.node().createNode('geo')
-                if pane is not None:
-                    geonode.setPosition(pane.cursorPosition())
-                stringToNodes(s, hou_parent=geonode, key=key)
-        else:
+    geonode = None
+    for _ in range(2):
+        try:
+            stringToNodes(s, ne=pane, key=key, hou_parent=geonode)
+        except InvalidContextError as e:
+            nec, snc = e.contexts()
+            if snc == 'Sop' and nec == 'Object':
+                if hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Warning, buttons=('Create geo node', 'Cancel'), default_choice=0, close_choice=1) == 0:
+                    if geonode is not None:
+                        raise RuntimeError('are we in an infinite loop?')
+                    geonode = e.node().createNode('geo')
+                    if pane is not None:
+                        geonode.setPosition(pane.cursorPosition())
+                    pane = None
+                    continue
+            else:
+                hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
+                return
+        except WrongKeyLengthError as e:
+            hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
+            return
+        except NoKeyError as e:
+            hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e), severity=hou.severityType.Error)
+            return
+        except WrongKeyError as e:
+            hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
+            return
+        except RuntimeError as e:
             hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
             return
-    except WrongKeyLengthError as e:
-        hou.ui.displayMessage("Bad key length: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
-        return
-    except NoKeyError as e:
-        hou.ui.displayMessage("This snippet is encrypted and requires a key: %s. Check if you copied hpaste link correctly. key in the link usually goes in front of the snippet, separated by '!'" % str(e), severity=hou.severityType.Error)
-        return
-    except WrongKeyError as e:
-        hou.ui.displayMessage("Wrong key: %s. Check if you copied hpaste link correctly" % str(e), severity=hou.severityType.Error)
-        return
-    except RuntimeError as e:
-        hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
-        return
-    except RuntimeWarning as e:
-        hou.ui.displayMessage("Warning: %s" % str(e), severity=hou.severityType.Warning)
+        except RuntimeWarning as e:
+            hou.ui.displayMessage("Warning: %s" % str(e), severity=hou.severityType.Warning)
+        break
 
     hou.ui.setStatusMessage("Success: Nodes pasted!")

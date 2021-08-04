@@ -22,11 +22,22 @@ You can read a bit more about it in here:
 this plugin is built to only use standard system modules and standard houdini modules.
 
 **HOWEVER** in some cases (like houdini 17.5 on linux) you might run into **SSL error** due to certificated being out of date. In this case you **should** install certifi module to still properly secure your connection. This can be done as simple as **pip install certifi** on linux, windows or mac (details at: https://pypi.org/project/certifi/) 
-### Super short and simple variant ###
+### Super short and simple package variant (use it with houdini >17.0) ###
 1. Download the contents of this repository as ZIP
-2. Unzip the contents of the folder **hpaste-master** it into your Houdini user folder, something like C:\Users\\<**USER>**\Documents\houdini16.5\
-(you actually don't need to copy the example folder from there)
-3. Enjoy!
+2. Unzip the contents of the archive (which is automatically created by github folder `hpaste-master`)
+   into your user folder (for ex `C:\Users\<USER>\Documents\houdini18.5\`)  
+   so as a result you will have `C:\Users\<USER>\Documents\houdini18.5\hpaste-master`
+3. Pick one file `hpaste.json` from there and move it into `packages` folder of your houdini user directory  (create it if it does not exist)  
+   for ex. the full path will look like `C:\Users\<USER>\Documents\houdini18.5\packages\hpaste.json`
+4. Enjoy!
+
+#### legacy variant
+1. Download the contents of this repository as ZIP
+2. Open the downloaded zip - you will see one folder **hpaste-master** inside it - this folder was created automatically by github
+3. Copy the **contents** of the folder **hpaste-master** it into your Houdini user folder, something like `C:\Users\<USER>\Documents\houdini16.5\`  
+   (just to be clear, you **DON'T** copy the folder **hpaste-master** itself, you copy it's **contents**)
+(also you actually don't need to copy the example folder from there)
+4. Enjoy!
 
 ### a bit longer variant ###
 1. copy **hpaste** folder from python2.7libs to your local script folder
