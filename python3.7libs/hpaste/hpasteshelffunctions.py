@@ -19,6 +19,10 @@ def hcopyweb():
     except:
         nodes = hou.selectedNodes()
 
+    if len(nodes) == 0:
+        hou.ui.displayMessage("No nodes are selected!", severity=hou.severityType.Error)
+        return
+
     enctype = hpasteoptions.getOption('hpasteweb.encryption_type', 'None')
     key = None
     encparms = {}
