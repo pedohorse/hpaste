@@ -10,6 +10,7 @@
     <memberTool name="hpaste"/>
     <memberTool name="hcopyweb"/>
     <memberTool name="hpasteweb"/>
+    <memberTool name="hpasteinspect"/>
     <memberTool name="hpasteoptions"/>
     <memberTool name="hpastecollection"/>
     <memberTool name="hpastecollectionauth"/>
@@ -174,6 +175,18 @@ except:
     parent=hou.ui.mainQtWindow()
 
 w=OptionsDialog(parent)
+
+w.show()]]></script>
+  </tool>
+  <tool name="hpasteinspect" label="Inspect" icon="hpaste-inspect">
+    <script scriptType="python"><![CDATA[from hpaste.QSnippetDetailsWidget import QSnippetDetailsWidget
+
+try:
+    parent=hou.qt.mainWindow()
+except:
+    parent=hou.ui.mainQtWindow()
+
+w=QSnippetDetailsWidget(parent)
 
 w.show()]]></script>
   </tool>
