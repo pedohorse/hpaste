@@ -16,7 +16,7 @@
     <memberTool name="hpastecollectionauth"/>
   </toolshelf>
 
-  <tool name="hcopy" label="HCopy" icon="copy.svg">
+  <tool name="hcopy" label="HCopy" icon="hpaste-copy">
     <script scriptType="python"><![CDATA[try:
     from PySide2.QtWidgets import QApplication
 except:
@@ -52,7 +52,7 @@ def do():
 do()]]></script>
   </tool>
 
-  <tool name="hpaste" label="HPaste" icon="paste.svg">
+  <tool name="hpaste" label="HPaste" icon="hpaste-paste">
     <script scriptType="python"><![CDATA[try:
     from PySide2.QtWidgets import QApplication
 except:
@@ -100,21 +100,21 @@ do(kwargs['pane'])
 ]]></script>
   </tool>
 
-  <tool name="hcopyweb" label="HCopyWeb" icon="cloud-upload.svg">
+  <tool name="hcopyweb" label="HCopyWeb" icon="hpaste-cloud-upload">
     <script scriptType="python"><![CDATA[
 from hpaste.hpasteshelffunctions import hcopyweb
 hcopyweb()
 ]]></script>
   </tool>
 
-  <tool name="hpasteweb" label="HPasteWeb" icon="cloud-download.svg">
+  <tool name="hpasteweb" label="HPasteWeb" icon="hpaste-cloud-download">
     <script scriptType="python"><![CDATA[
 from hpaste.hpasteshelffunctions import hpasteweb
 hpasteweb(kwargs['pane'])
 ]]></script>
   </tool>
 
-  <tool name="hpastecollection" label="Collection" icon="cloud-networking-svgrepo-com">
+  <tool name="hpastecollection" label="Collection" icon="hpaste-collections">
     <script scriptType="python"><![CDATA[try:
     from PySide2.QtGui import QCursor
     from PySide2.QtWidgets import QInputDialog, QApplication
@@ -152,7 +152,7 @@ def do(kwargs):
 do(kwargs)]]></script>
   </tool>
 
-  <tool name="hpastecollectionauth" label="Collection Authorization" icon="cloud-computing-tools-svgrepo-com">
+  <tool name="hpastecollectionauth" label="Collection Authorization" icon="hpaste-cloud-settings">
     <script scriptType="python"><![CDATA[import hpaste.accountsmanager
 from hpaste.accountsmanager import AccountsManager
 
@@ -166,7 +166,7 @@ wid=AccountsManager(mainwindow)
 wid.show()]]></script>
   </tool>
 
-  <tool name="hpasteoptions" label="HPaste Options" icon="options">
+  <tool name="hpasteoptions" label="HPaste Options" icon="hpaste-options">
     <script scriptType="python"><![CDATA[from hpaste.optionsdialog import OptionsDialog
 
 try:
