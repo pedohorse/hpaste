@@ -1,5 +1,5 @@
+# it's high time to forget Qt4, this will be qt5 only
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy
-from PySide2.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
 from PySide2.QtCore import Slot, Qt, QSize
 from .hpasteweb import webUnpack
 from .hpaste import stringToData
@@ -8,7 +8,17 @@ from typing import Optional
 
 
 class QSnippetDetailsWidget_ui:
+    def add_text_view(self, wgt: QWidget, label: str):
+        if isinstance(wgt, QLineEdit):
+            wgt.setReadOnly(True)
+        lbl = QLabel(label)
+        self._labels.append(lbl)
+        self.data_layout.addWidget(lbl, self.__data_lay_row, 0)
+        self.data_layout.addWidget(wgt, self.__data_lay_row, 1)
+        self.__data_lay_row += 1
+
     def __init__(self, parent: QWidget):
+        self.__data_lay_row = 0
         self.main_layout = QVBoxLayout()
         parent.setLayout(self.main_layout)
 
@@ -25,33 +35,25 @@ class QSnippetDetailsWidget_ui:
         data_lay_row = 0
         self._labels = []
 
-        def add_text_view(wgt: QWidget, label: str):
-            if isinstance(wgt, QLineEdit):
-                wgt.setReadOnly(True)
-            lbl = QLabel(label)
-            self._labels.append(lbl)
-            nonlocal data_lay_row
-            self.data_layout.addWidget(lbl, data_lay_row, 0)
-            self.data_layout.addWidget(wgt, data_lay_row, 1)
-            data_lay_row += 1
+
 
         self.chsum = QLineEdit()
-        add_text_view(self.chsum, 'checksum')
+        self.add_text_view(self.chsum, 'checksum')
 
         self.context = QLineEdit()
-        add_text_view(self.context, 'context')
+        self.add_text_view(self.context, 'context')
 
         self.houver = QLineEdit()
-        add_text_view(self.houver, 'houdini')
+        self.add_text_view(self.houver, 'houdini')
 
         self.author = QLineEdit()
-        add_text_view(self.author, 'author')
+        self.add_text_view(self.author, 'author')
 
         self.datasize = QLineEdit()
-        add_text_view(self.datasize, 'data size')
+        self.add_text_view(self.datasize, 'data size')
 
         self.hdalist = QTableWidget()
-        add_text_view(self.hdalist, 'embedded HDAs')
+        self.add_text_view(self.hdalist, 'embedded HDAs')
         self.hdalist.setColumnCount(3)
         self.hdalist.horizontalHeader().setStretchLastSection(True)
         self.hdalist.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
@@ -62,7 +64,7 @@ class QSnippetDetailsWidget_ui:
         self.hdalist.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
 
         self.hpformat= QLineEdit()
-        add_text_view(self.hpformat, 'snippet format')
+        self.add_text_view(self.hpformat, 'snippet format')
 
         self.main_layout.addWidget(self.snippet_input)
         self.main_layout.addWidget(self.is_encrypted)
@@ -125,9 +127,11 @@ def nice_memory_formatting(memory_bytes: int) -> str:
     next_suff = 'EB'
     for su in suff:
         if memory_bytes < 1100:
-            return f'{memory_bytes}{su}'
+            return '{memory_bytes}{su}'.format(memory_bytes=memory_bytes,
+                                               su=su)
         memory_bytes //= 1000
-    return f'{memory_bytes}{next_suff}'
+    return '{memory_bytes}{next_suff}'.format(memory_bytes=memory_bytes,
+                                              next_suff=next_suff)
 
 
 def test():
