@@ -9,7 +9,7 @@ if(__name__=='__main__'):
 	if('HOUDINI_USER_PREF_DIR' not in os.environ):
 		os.environ['HOUDINI_USER_PREF_DIR'] = r'D:\tmp'
 
-settings_filename=os.path.normpath(os.path.join(os.environ['HOUDINI_USER_PREF_DIR'],'.hpaste_options'))
+settings_filename=os.path.normpath(os.path.join(os.environ.get('HOUDINI_USER_PREF_DIR', '~'),'.hpaste_options'))
 default_options={'hpaste':{},'hpasteweb':{}}
 
 cached_data=None
