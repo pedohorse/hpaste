@@ -1,14 +1,18 @@
 # it's high time to forget Qt4, this will be qt5 only
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox
 from PySide2.QtCore import Slot, Qt, QSize
 from .hpasteweb import webUnpack
 from .hpaste import stringToData
 
-from typing import Optional
+try:
+    from typing import Optional
+except ImportError:  # for py2
+    pass
 
 
 class QSnippetDetailsWidget_ui:
-    def add_text_view(self, wgt: QWidget, label: str):
+    def add_text_view(self, wgt, label):
+        # type: (QWidget, str) -> None
         if isinstance(wgt, QLineEdit):
             wgt.setReadOnly(True)
         lbl = QLabel(label)
@@ -17,25 +21,25 @@ class QSnippetDetailsWidget_ui:
         self.data_layout.addWidget(wgt, self.__data_lay_row, 1)
         self.__data_lay_row += 1
 
-    def __init__(self, parent: QWidget):
+    def __init__(self, parent):
+        # type: (QWidget) -> None
         self.__data_lay_row = 0
         self.main_layout = QVBoxLayout()
         parent.setLayout(self.main_layout)
+
+        self.data_layout = QGridLayout()
+        self._labels = []
 
         self.snippet_input = QLineEdit()
         self.snippet_input.setPlaceholderText('put snippet link here')
 
         self.is_encrypted = QCheckBox('encrypted')
         self.is_encrypted.setEnabled(False)
+        self.add_text_view(self.is_encrypted, 'encryption')
 
         self.is_singed = QCheckBox('signed')
         self.is_singed.setEnabled(False)
-
-        self.data_layout = QGridLayout()
-        data_lay_row = 0
-        self._labels = []
-
-
+        self.add_text_view(self.is_singed, 'signature')
 
         self.chsum = QLineEdit()
         self.add_text_view(self.chsum, 'checksum')
@@ -55,9 +59,10 @@ class QSnippetDetailsWidget_ui:
         self.hdalist = QTableWidget()
         self.add_text_view(self.hdalist, 'embedded HDAs')
         self.hdalist.setColumnCount(3)
-        self.hdalist.horizontalHeader().setStretchLastSection(True)
+        # self.hdalist.horizontalHeader().setStretchLastSection(True)
         self.hdalist.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.hdalist.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.hdalist.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.hdalist.horizontalHeader().setVisible(False)
         self.hdalist.verticalHeader().setVisible(False)
         self.hdalist.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
@@ -67,13 +72,16 @@ class QSnippetDetailsWidget_ui:
         self.add_text_view(self.hpformat, 'snippet format')
 
         self.main_layout.addWidget(self.snippet_input)
-        self.main_layout.addWidget(self.is_encrypted)
         self.main_layout.addLayout(self.data_layout)
 
 
 class QSnippetDetailsWidget(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent=None):
+        # type: (Optional[QWidget]) -> None
         super(QSnippetDetailsWidget, self).__init__(parent)
+        self.setWindowTitle('snippet inspector')
+        self.setWindowFlag(Qt.Dialog)
+        self.setProperty('houdiniStyle', True)
         self.ui = QSnippetDetailsWidget_ui(self)
         self.__last_snippet = ''
         self.setMinimumWidth(400)
@@ -83,14 +91,36 @@ class QSnippetDetailsWidget(QWidget):
 
         self.adjustSize()
 
+    def _clear_info(self):
+        self.ui.is_encrypted.setEnabled(False)
+        self.ui.is_singed.setEnabled(False)
+        self.ui.chsum.setText('')
+        self.ui.context.setText('')
+        self.ui.houver.setText('')
+        self.ui.author.setText('')
+        self.ui.hpformat.setText('')
+        self.ui.datasize.setText('')
+        self.ui.hdalist.setRowCount(0)
+        self.adjustSize()
+
     @Slot()
     def fill_information(self):
         url = self.ui.snippet_input.text().strip()
         if self.__last_snippet == url:
             return
         self.__last_snippet = url
-        snippet = webUnpack(url)
-        data, deserializer = stringToData(snippet)
+        try:
+            snippet = webUnpack(url)
+        except RuntimeError as e:
+            QMessageBox.warning(self, 'error retrieving the snippet', str(e))
+            self._clear_info()
+            return
+        try:
+            data, deserializer = stringToData(snippet)
+        except Exception as e:
+            QMessageBox.warning(self, 'error parsing the snippet', str(e))
+            self._clear_info()
+            return
 
         self.ui.is_encrypted.setEnabled(data.get('encrypted', False))
         self.ui.is_singed.setEnabled(data.get('signed', False))
@@ -111,8 +141,6 @@ class QSnippetDetailsWidget(QWidget):
                 self._update_hda_item(item.get('type', '<N/A>'), i, 2)
 
         self.adjustSize()
-        from pprint import pprint
-        pprint(data)
 
     def _update_hda_item(self, text, row, col):
         item = self.ui.hdalist.item(row, col)
@@ -122,7 +150,8 @@ class QSnippetDetailsWidget(QWidget):
         item.setText(text)
 
 
-def nice_memory_formatting(memory_bytes: int) -> str:
+def nice_memory_formatting(memory_bytes):
+    # type: (int) -> str
     suff = ('B', 'KB', 'MB', 'GB', 'TB', 'PB')
     next_suff = 'EB'
     for su in suff:
