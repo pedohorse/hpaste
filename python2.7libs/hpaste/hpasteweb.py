@@ -1,4 +1,10 @@
-import hou  # for ui only
+try:
+    import hou  # for ui only
+except ImportError:
+    class hou:
+        def isUIAvailable(self):
+            return False
+
 import hpastewebplugins
 import widcacher
 import random  # to shuffle plugins
