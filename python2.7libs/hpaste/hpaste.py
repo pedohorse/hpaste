@@ -258,7 +258,7 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
 	return stringdata
 
 
-def stringToData(s: str, key=None):  # TODO: use this in stringToNodes
+def stringToData(s, key=None):  # TODO: use this in stringToNodes
 	try:
 		data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)))
 	except Exception as e:
