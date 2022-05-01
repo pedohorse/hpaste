@@ -185,6 +185,11 @@ class QDetailsDialog(QDialog):
         self.__main_layout = QVBoxLayout()
         self.setLayout(self.__main_layout)
 
+        self.__warning = QLabel('Warning! hip(nl/lc) is a proprietary format\n'
+                                'Everything below is gained through surface pattern analysis, not proper structural analysis\n'
+                                'So information may be not 100% correct!')
+        self.__main_layout.addWidget(self.__warning)
+
         self.__info_detail = QTextEdit()
         self.__info_detail.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         self.__info_detail.setReadOnly(True)
