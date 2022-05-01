@@ -1,6 +1,6 @@
 import re
 
-from .hpaste import stringToData
+from .hpaste import stringToData, WrongKeyError
 
 
 cheader = re.compile(b'070707[0-7]{6}[0-7]{6}'
@@ -86,7 +86,10 @@ def generate_report_data(s, key=None):
     if deserializer is None:
         return {'error': 'cannot deserialize data, probably encryption key was not provided'}
 
-    code = deserializer(data['code'].encode('UTF-8'))  # type: bytes
+    try:
+        code = deserializer(data['code'].encode('UTF-8'))  # type: bytes
+    except WrongKeyError:
+        return {'error': 'cannot deserialize data, wrong encryption key provided'}
 
     info = {}
 
