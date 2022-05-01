@@ -37,6 +37,9 @@ statmeta = re.compile(br'stat\s*'
                       br'\s*access\s+(?P<access>\d+)\n'
                       br'\s*\}', re.MULTILINE)
 
+sesilic = re.compile(br'(?P<sesilic>alias\s+(?:-u\s+)?\'?__sesi_license__\'?\s+(?:\'\s*)?\{(?P<lic>[^}]*)\}(?:\'\s*)?)', re.MULTILINE)
+
+
 def _lic_type_from_code(code, data):
     # type: (bytes, dict) -> str
     lic = 'unknown'
@@ -89,6 +92,17 @@ def _scan_for_nodes(code, data):
     return nodes
 
 
+def _scan_for_misc(code, data):
+    # type: (bytes, dict) -> str
+    match = sesilic.search(code)
+    if not match:
+        return ''
+
+    res = match.group('lic').decode('UTF-8')
+    data['license.alias'] = res
+    return res
+
+
 def _scan_for_authors_dates(code, data):
     # type: (bytes, dict) -> tuple[set[tuple[str, str]], tuple[tuple[int, int], tuple[int, int]]]
     authors = set()
@@ -133,6 +147,7 @@ def generate_report_data_for_code(code):
     _scan_for_python_imports(code, info)
     _scan_for_nodes(code, info)
     _scan_for_authors_dates(code, info)
+    _scan_for_misc(code, info)
 
     return info
 
@@ -186,6 +201,7 @@ end
 version 0.8'''
     test = _scan_for_authors_dates(text, {})
     assert test == ({('joey', 'lucy')}, ((1656665358, 1656665358), (1656665364, 1656665364))), test
+
 
 if __name__ == '__main__':
     _test_scan_for_python_imports()
