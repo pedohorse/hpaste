@@ -1,8 +1,10 @@
 # it's high time to forget Qt4, this will be qt5 only
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox,\
+    QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox, QDialog, QTextEdit, QPushButton
 from PySide2.QtCore import Slot, Qt, QSize
 from .hpasteweb import webUnpack
-from .hpaste import stringToData
+from .hpaste import stringToData, WrongKeyError
+from .codeanalysis import generate_report_data
 
 try:
     from typing import Optional
@@ -68,7 +70,11 @@ class QSnippetDetailsWidget_ui:
         self.hdalist.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
         self.hdalist.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding)
 
-        self.hpformat= QLineEdit()
+        self.details_button = QPushButton('show details')
+        self.details_button.setEnabled(False)
+        self.add_text_view(self.details_button, 'code analysis')
+
+        self.hpformat = QLineEdit()
         self.add_text_view(self.hpformat, 'snippet format')
 
         self.main_layout.addWidget(self.snippet_input)
@@ -83,17 +89,26 @@ class QSnippetDetailsWidget(QWidget):
         self.setWindowFlag(Qt.Dialog)
         self.setProperty('houdiniStyle', True)
         self.ui = QSnippetDetailsWidget_ui(self)
-        self.__last_snippet = ''
         self.setMinimumWidth(400)
+        self.__last_snippet = ''
+        self.__last_snippet_code = None
 
         # connec
         self.ui.snippet_input.editingFinished.connect(self.fill_information)
+        self.ui.details_button.pressed.connect(self.show_code_details)
 
         self.adjustSize()
 
+    def show_code_details(self):
+        if self.__last_snippet_code is None:
+            return
+        wgt = QDetailsDialog(self.__last_snippet_code[0], self.__last_snippet_code[1], self)
+        wgt.finished.connect(wgt.deleteLater)
+        wgt.show()
+
     def _clear_info(self):
-        self.ui.is_encrypted.setEnabled(False)
-        self.ui.is_singed.setEnabled(False)
+        self.ui.is_encrypted.setChecked(False)
+        self.ui.is_singed.setChecked(False)
         self.ui.chsum.setText('')
         self.ui.context.setText('')
         self.ui.houver.setText('')
@@ -101,6 +116,9 @@ class QSnippetDetailsWidget(QWidget):
         self.ui.hpformat.setText('')
         self.ui.datasize.setText('')
         self.ui.hdalist.setRowCount(0)
+        self.ui.details_button.setEnabled(False)
+        self.__last_snippet_code = None
+        self.__last_snippet = ''
         self.adjustSize()
 
     @Slot()
@@ -109,27 +127,34 @@ class QSnippetDetailsWidget(QWidget):
         if self.__last_snippet == url:
             return
         self.__last_snippet = url
+
+        key = None
+        if '!' in url:
+            key, url = url.split('!', 1)
+
         try:
             snippet = webUnpack(url)
         except RuntimeError as e:
             QMessageBox.warning(self, 'error retrieving the snippet', str(e))
             self._clear_info()
             return
+        self.__last_snippet_code = (snippet, key)
         try:
-            data, deserializer = stringToData(snippet)
+            data, _ = stringToData(snippet, key)
         except Exception as e:
             QMessageBox.warning(self, 'error parsing the snippet', str(e))
             self._clear_info()
             return
 
-        self.ui.is_encrypted.setEnabled(data.get('encrypted', False))
-        self.ui.is_singed.setEnabled(data.get('signed', False))
+        code = data.get('code', '')
+        self.ui.is_encrypted.setChecked(data.get('encrypted', False))
+        self.ui.is_singed.setChecked(data.get('signed', False))
         self.ui.chsum.setText(data.get('chsum', '<N/A>'))
         self.ui.context.setText(data.get('context', '<N/A>'))
         self.ui.houver.setText('.'.join(str(x) for x in data['houver']) if 'houver' in data else '<N/A>')
         self.ui.author.setText(data.get('author', '<N/A>'))
         self.ui.hpformat.setText(str(data.get('version', 0)) + ('.{}'.format(data['version.minor']) if 'version.minor' in data else ''))
-        self.ui.datasize.setText(nice_memory_formatting(len(data.get('code', ''))))
+        self.ui.datasize.setText(nice_memory_formatting(len(code)))
 
         hda_list = data.get('hdaList', [])
         if hda_list:
@@ -140,6 +165,8 @@ class QSnippetDetailsWidget(QWidget):
                 self._update_hda_item(item.get('category', '<N/A>'), i, 1)
                 self._update_hda_item(item.get('type', '<N/A>'), i, 2)
 
+        self.ui.details_button.setEnabled(True)
+
         self.adjustSize()
 
     def _update_hda_item(self, text, row, col):
@@ -148,6 +175,54 @@ class QSnippetDetailsWidget(QWidget):
             item = QTableWidgetItem(text)
             self.ui.hdalist.setItem(row, col, item)
         item.setText(text)
+
+
+class QDetailsDialog(QDialog):
+    def __init__(self, snippet, key=None, parent=None):
+        super(QDetailsDialog, self).__init__(parent)
+        self.setModal(True)
+
+        self.__main_layout = QVBoxLayout()
+        self.setLayout(self.__main_layout)
+
+        self.__info_detail = QTextEdit()
+        self.__info_detail.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.__info_detail.setReadOnly(True)
+        self.__main_layout.addWidget(self.__info_detail)
+
+        self.set_data(snippet, key)
+
+    def set_data(self, snippet, ekey):
+        # type: (str, str) -> None
+        text_parts = []
+        try:
+            data = generate_report_data(snippet, ekey)
+        except WrongKeyError:
+            self.__info_detail.setText('data encrypted, no valid key provided')
+            return
+        for key in sorted(data.keys()):
+            val = data[key]
+            if isinstance(val, str):
+                text_parts += ['{}: {}'.format(key, val)]
+            elif isinstance(val, (set, list, tuple)):
+                if len(val) == 0:
+                    text_parts += ['{}:'.format(key)]
+                    continue
+                if isinstance(val, set):  # for uniformity
+                    val = list(val)
+                if isinstance(val[0], (str, bytes)):
+                    sorted_val = sorted(val)
+                elif isinstance(val[0], tuple):
+                    # assume all tuples are same length
+                    toffsets = [max(len(x[i]) for x in val) + 2 for i in range(len(val[0]))]
+                    sorted_val = sorted(''.join('{{:{}s}}'.format(off).format(x) for off, x in zip(toffsets, val_i)) for val_i in val)
+                else:
+                    sorted_val = sorted(str(x) for x in val)
+                offset = len(key) + 2
+                text_parts += ['{}: '.format(key) + ('\n' + ' '*offset).join(str(x) for x in sorted_val)]
+
+        self.__info_detail.setText('<pre>' + '\n\n'.join(text_parts) + '</pre>')
+        self.adjustSize()
 
 
 def nice_memory_formatting(memory_bytes):
@@ -172,6 +247,7 @@ def test():
     wgt.show()
     # uyoduviriw@HPaste
     # darehetiwu@HPaste
+    # dXrQZpY6glXBpinc!atolayiwel@HPaste
 
     sys.exit(qapp.exec_())
 
