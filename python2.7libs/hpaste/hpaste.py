@@ -273,7 +273,10 @@ def stringToData(s, key=None):  # TODO: use this in stringToNodes
 	if data.get('signed', False):
 		print('HPaste: Warning!! this snippet seem to be signed, but this version of HPaste has no idea how to check signatures! so signature check will be skipped!')
 
-	deserializer = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+	try:
+		deserializer = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+	except NoKeyError:
+		deserializer = None
 
 	return data, deserializer
 

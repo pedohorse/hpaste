@@ -260,7 +260,7 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
     return stringdata.decode('UTF-8')
 
 
-def stringToData(s: str, key=None) -> (dict, Callable[[bytes], bytes]):  # TODO: use this in stringToNodes
+def stringToData(s: str, key=None) -> (dict, Optional[Callable[[bytes], bytes]]):  # TODO: use this in stringToNodes
     s = s.encode('UTF-8')  # ununicode. there should not be any unicode in it anyways
     try:
         data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)).decode('UTF-8'))
@@ -276,7 +276,10 @@ def stringToData(s: str, key=None) -> (dict, Callable[[bytes], bytes]):  # TODO:
     if data.get('signed', False):
         print('HPaste: Warning!! this snippet seem to be signed, but this version of HPaste has no idea how to check signatures! so signature check will be skipped!')
 
-    deserializer = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+    try:
+        deserializer = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+    except NoKeyError:
+        deserializer = None
 
     return data, deserializer
 
