@@ -1,3 +1,4 @@
+from datetime import datetime
 # it's high time to forget Qt4, this will be qt5 only
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox,\
     QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox, QDialog, QTextEdit, QPushButton
@@ -185,7 +186,10 @@ class QDetailsDialog(QDialog):
         self.__main_layout = QVBoxLayout()
         self.setLayout(self.__main_layout)
 
-        self.__warning = QLabel('Warning! hip(nl/lc) is a proprietary format\n'
+        self.__warning = QLabel('This is NOT information that hpaste collects!\n'
+                                'This information is stored by Houdini in it\'s nodes representation\n'
+                                'You share same info and much more when you share hip files\n'
+                                'Warning! hip(nl/lc) is a proprietary format\n'
                                 'Everything below is gained through surface pattern analysis, not proper structural analysis\n'
                                 'So information may be not 100% correct!')
         self.__main_layout.addWidget(self.__warning)
@@ -207,6 +211,13 @@ class QDetailsDialog(QDialog):
             return
         for key in sorted(data.keys()):
             val = data[key]
+            if key == 'authors':
+                val = ['{} ({})'.format(x, y) for x, y in val]
+            if key in ('nctimes', 'nmtimes'):
+                val = [(l, datetime.utcfromtimestamp(x).strftime('[%d.%b.%Y, %H:%M:%S]')) for x, l in zip(val, ('from', 'to'))]
+                key = {'nctimes': 'node creation times',
+                       'nmtimes': 'node modification times'}[key]
+
             if isinstance(val, str):
                 text_parts += ['{}: {}'.format(key, val)]
             elif isinstance(val, (set, list, tuple)):
