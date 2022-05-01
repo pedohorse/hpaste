@@ -217,7 +217,7 @@ class OptionsDialog(object):
             self.ui_ignore_houversion_warning.toggled.connect(self.togglesCallback)
             self.ui_hpastebox_pasteLayout.addWidget(self.ui_ignore_houversion_warning)
 
-            stsh = "QWidget#MainWindow {\n	background-color : rgb(58,58,58);\n}\n"
+            stsh = "QWidget#MainWindow {\n    background-color : rgb(58,58,58);\n}\n"
 
             if QDir(":/qt-project.org/styles/commonstyle/images/").exists():  # this was introduced to workaround a bug with one of houdini linux builds that had a bug of missing standard icons in some stylesheet cases
                 stsh += '''
