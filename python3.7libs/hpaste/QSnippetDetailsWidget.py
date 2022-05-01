@@ -261,9 +261,6 @@ def test():
 
     wgt = QSnippetDetailsWidget()
     wgt.show()
-    # uyoduviriw@HPaste
-    # darehetiwu@HPaste
-    # dXrQZpY6glXBpinc!atolayiwel@HPaste
 
     sys.exit(qapp.exec_())
 
