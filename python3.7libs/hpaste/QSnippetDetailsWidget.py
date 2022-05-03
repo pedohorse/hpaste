@@ -2,7 +2,8 @@ from datetime import datetime
 # it's high time to forget Qt4, this will be qt5 only
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLineEdit, QCheckBox,\
     QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QSizePolicy, QMessageBox, QDialog, QTextEdit, QPushButton
-from PySide2.QtCore import Slot, Qt, QSize
+from PySide2.QtCore import Signal, Slot, Qt, QSize
+from PySide2.QtGui import QKeySequence
 from .hpasteweb import webUnpack
 from .hpaste import stringToData, WrongKeyError
 from .codeanalysis import generate_report_data
@@ -33,7 +34,7 @@ class QSnippetDetailsWidget_ui:
         self.data_layout = QGridLayout()
         self._labels = []
 
-        self.snippet_input = QLineEdit()
+        self.snippet_input = QLineEditWithPaste()
         self.snippet_input.setPlaceholderText('put snippet link here')
 
         self.is_encrypted = QCheckBox('encrypted')
@@ -82,6 +83,16 @@ class QSnippetDetailsWidget_ui:
         self.main_layout.addLayout(self.data_layout)
 
 
+class QLineEditWithPaste(QLineEdit):
+    pasted = Signal()
+
+    def keyPressEvent(self, event):
+        res = super(QLineEditWithPaste, self).keyPressEvent(event)
+        if event.matches(QKeySequence.Paste):
+            self.pasted.emit()
+        return res
+
+
 class QSnippetDetailsWidget(QWidget):
     def __init__(self, parent=None):
         # type: (Optional[QWidget]) -> None
@@ -95,15 +106,21 @@ class QSnippetDetailsWidget(QWidget):
         self.__last_snippet_code = None
 
         # connec
+        self.ui.snippet_input.pasted.connect(self.fill_information)
         self.ui.snippet_input.editingFinished.connect(self.fill_information)
         self.ui.details_button.pressed.connect(self.show_code_details)
 
         self.adjustSize()
 
+    def set_inspected_url(self, url):
+        self.ui.snippet_input.setText(url)
+        self.fill_information()
+
     def show_code_details(self):
         if self.__last_snippet_code is None:
             return
         wgt = QDetailsDialog(self.__last_snippet_code[0], self.__last_snippet_code[1], self)
+        wgt.setWindowTitle('details for {}'.format(self.ui.snippet_input.text()))
         wgt.finished.connect(wgt.deleteLater)
         wgt.show()
 
