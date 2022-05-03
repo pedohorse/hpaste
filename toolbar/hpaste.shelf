@@ -179,15 +179,8 @@ w=OptionsDialog(parent)
 w.show()]]></script>
   </tool>
   <tool name="hpasteinspect" label="Inspect" icon="hpaste-inspect">
-    <script scriptType="python"><![CDATA[from hpaste.QSnippetDetailsWidget import QSnippetDetailsWidget
-
-try:
-    parent=hou.qt.mainWindow()
-except:
-    parent=hou.ui.mainQtWindow()
-
-w=QSnippetDetailsWidget(parent)
-
-w.show()]]></script>
+    <script scriptType="python"><![CDATA[from hpaste.hpasteshelffunctions import hpaste_inspect_tool
+hpaste_inspect_tool(kwargs)
+]]></script>
   </tool>
 </shelfDocument>
