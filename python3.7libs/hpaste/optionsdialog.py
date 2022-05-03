@@ -187,6 +187,10 @@ class OptionsDialog(object):
             self.ui_saveHdasToggle.toggled.connect(self.togglesCallback)
             self.ui_hpastebox_copyLayout.addWidget(self.ui_saveHdasToggle)
 
+            self.ui_stripmeta = QCheckBox('Strip metadata from the code', self)
+            self.ui_stripmeta.toggled.connect(self.togglesCallback)
+            self.ui_hpastebox_copyLayout.addWidget(self.ui_stripmeta)
+
             self.ui_encLayout = QHBoxLayout()
 
             self.ui_encLabel = QLabel('encryption type:', self)
@@ -250,6 +254,7 @@ QCheckBox::indicator:unchecked{
             self.__optionsReread = True
             try:
                 self.ui_saveHdasToggle.setChecked(hpasteoptions.getOption('hpaste.transfer_assets', True))
+                self.ui_stripmeta.setChecked(hpasteoptions.getOption('hpaste.strip_metadata', False))
                 self.ui_ignoreWhenExists.setChecked(hpasteoptions.getOption('hpaste.ignore_hdas_if_already_defined', True))
                 self.ui_forcePreferred.setChecked(hpasteoptions.getOption('hpaste.force_prefer_hdas', False))
                 self.ui_ignore_houversion_warning.setChecked(hpasteoptions.getOption('hpaste.ignore_houversion_warning', False))
@@ -270,6 +275,8 @@ QCheckBox::indicator:unchecked{
             sender = self.sender()
             if sender is self.ui_saveHdasToggle:
                 hpasteoptions.setOption('hpaste.transfer_assets', state)
+            if sender is self.ui_stripmeta:
+                hpasteoptions.setOption('hpaste.strip_metadata', state)
             if sender is self.ui_ignoreWhenExists:
                 hpasteoptions.setOption('hpaste.ignore_hdas_if_already_defined', state)
             if sender is self.ui_forcePreferred:
