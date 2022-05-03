@@ -25,8 +25,12 @@ try:
     import hpasteoptions as opt
 except:
     print("Hpaste: Failed to load options, using defaults")
-# for debug
-# from pprint import pprint
+
+try:
+    from .hipmetastrip import clean_meta
+except ImportError:
+    def clean_meta(x):  # type: (bytes) -> bytes
+        return x
 
 
 current_format_version = (2, 2)
@@ -144,7 +148,7 @@ def getDeserializer(enctype=None, **kwargs):
         raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
-def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
+def nodesToString(nodes, transfer_assets=None, encryption_type=None, clean_metadata=None, **kwargs):
     """
         nodes : hou.NetworkMovableItems
     algtype:
@@ -152,6 +156,8 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
         1 - new h16 serialization, much prefered!
     :param nodes:
     :param transfer_assets:
+    :param encryption_type: type of encryption to use
+    :param clean_metadata: whether to clean code from metadata or no. this does not
     :return:
     """
 
@@ -230,9 +236,10 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs):
                 code = f.read()
         finally:
             os.close(fd)
-    # THIS WAS IN FORMAT VERSION 1 code = binascii.b2a_qp(code)
+
+        if clean_metadata or clean_metadata is None and opt is not None and opt.getOption('hpaste.strip_metadata', False):
+            code = clean_meta(code)
     code = serialize(code)
-    # pprint(code)
 
     data = {}
     data['algtype'] = algtype
