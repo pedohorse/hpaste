@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-
+this file is par of https://github.com/pedohorse/hip-meta-stripper repository
 """
 from __future__ import print_function
 import sys
