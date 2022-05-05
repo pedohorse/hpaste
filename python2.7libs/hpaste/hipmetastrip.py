@@ -7,6 +7,7 @@ import sys
 import re
 from copy import copy
 import time
+from getpass import getuser  # for sanity check
 
 try:
     from typing import Union, Optional
@@ -80,6 +81,16 @@ class buffer23(object):
 
 
 def clean_meta(filetext):  # type: (bytes) -> bytes
+    """
+    this expects filetext to start with a correct block header
+    """
+    if filetext.startswith(b'070707'):
+        return clean_meta_c(filetext)
+    else:
+        return clean_meta_nc(filetext)
+
+
+def clean_meta_c(filetext):  # type: (bytes) -> bytes
     cpio_rgx = re.compile(br'070707(?P<crap>\d{42})(?P<mtime>\d{11})(?P<namesize>\d{6})(?P<bodysize>\d{11})', re.M)
     stat_rgx = re.compile(b'|'.join((br'(?P<stat>stat\s*\{(?P<statinner>[^}]*)\})',
                                      br'(?P<sesilic>alias\s+(?:-u\s+)?\'?__sesi_license__\'?\s+(?:\'\s*)?\{([^}]*)\}(?:\'\s*)?)'
@@ -157,6 +168,67 @@ def clean_meta(filetext):  # type: (bytes) -> bytes
     textview = buffer23(filetext)
     blocks, _ = search_block(textview)
     return b''.join(x.tobytes() if isinstance(x, buffer23) else x for x in blocks)
+
+
+def _cycle_pattern(pattern, length):  # type: (bytes, int) -> bytes
+    pattern_len = len(pattern)
+    if length <= pattern_len:
+        return pattern[:length]
+    return (pattern*(int(length//pattern_len) + 1))[:length]
+
+
+def clean_meta_nc(filetext):  # type: (bytes) -> bytes
+    """
+    this tries to cleanup metadata in NC files, but does it through simple pattern analysis as opposed to block analysis, as with commercial files
+    """
+    # TODO: regex below relies on create-modify-author strict order
+    loose_stat_rgx = re.compile(br'Hou[NL]C\x1a[0-7]{5}[0-9a-fA-F]{5}(?P<htime>[0-9a-fA-F]{9})[0-9a-fA-F]{9}'
+                                br'(?:'
+                                br'(?:\w|/)+\.def' b'\0'
+                                b'.*?' 
+                                br'(?:'
+                                br'(?P<stat>stat\s*\{[^}]*'
+                                br'\s*create\s+(?P<create>\d+)\n'
+                                br'\s*modify\s+(?P<modify>\d+)\n'
+                                br'\s*author\s+(?P<author>[^}]+)@(?P<hostname>[^}\n]+)\n'
+                                br'[^}]*\})'
+                                br'|.(?=Hou[NL]C\x1a)'
+                                br')'
+                                br')?', re.M | re.DOTALL)
+
+    spoof_timestamp_s = b'0' + str(spoof_timestamp).encode('UTF-8')
+    spoof_timestamp_hs = '{:09x}'.format(spoof_timestamp).encode('UTF-8')
+    blocks = []
+    offset = 0
+    for match in loose_stat_rgx.finditer(filetext):
+        if do_spoof_cpio_timestamp:
+            blocks.append(filetext[offset:match.start('htime')])
+            blocks.append(spoof_timestamp_hs)
+            offset = match.end('htime')
+        if match.group('stat') is None:
+            continue
+        if do_spoof_stat_timestamp:
+            blocks.append(filetext[offset:match.start('create')])
+            blocks.append(_cycle_pattern(spoof_timestamp_s, len(match.group('create'))))
+            blocks.append(filetext[match.end('create'):match.start('modify')])
+            blocks.append(_cycle_pattern(spoof_timestamp_s, len(match.group('modify'))))
+            offset = match.end('modify')
+        blocks.append(filetext[offset:match.start('author')])
+        blocks.append(_cycle_pattern(spoof_user, len(match.group('author'))) + b'@' +
+                      _cycle_pattern(spoof_host, len(match.group('hostname')))
+                      )
+        offset = match.end('stat')
+        blocks.append(filetext[match.end('hostname'):offset])
+
+    if offset == 0:
+        return filetext
+
+    blocks.append(filetext[offset:])
+    result = b''.join(blocks)
+    # sanity check
+    if (getuser().encode('UTF-8') + b'@') in blocks:
+        print('metaclean WARNING: username still detected in nodecode!')
+    return result
 
 
 def clean_file(file_in, file_out):
