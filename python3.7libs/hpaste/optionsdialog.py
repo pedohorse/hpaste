@@ -187,6 +187,10 @@ class OptionsDialog(object):
             self.ui_saveHdasToggle.toggled.connect(self.togglesCallback)
             self.ui_hpastebox_copyLayout.addWidget(self.ui_saveHdasToggle)
 
+            self.ui_stripmeta = QCheckBox('Strip metadata from the code', self)
+            self.ui_stripmeta.toggled.connect(self.togglesCallback)
+            self.ui_hpastebox_copyLayout.addWidget(self.ui_stripmeta)
+
             self.ui_encLayout = QHBoxLayout()
 
             self.ui_encLabel = QLabel('encryption type:', self)
@@ -217,7 +221,7 @@ class OptionsDialog(object):
             self.ui_ignore_houversion_warning.toggled.connect(self.togglesCallback)
             self.ui_hpastebox_pasteLayout.addWidget(self.ui_ignore_houversion_warning)
 
-            stsh = "QWidget#MainWindow {\n	background-color : rgb(58,58,58);\n}\n"
+            stsh = "QWidget#MainWindow {\n    background-color : rgb(58,58,58);\n}\n"
 
             if QDir(":/qt-project.org/styles/commonstyle/images/").exists():  # this was introduced to workaround a bug with one of houdini linux builds that had a bug of missing standard icons in some stylesheet cases
                 stsh += '''
@@ -250,6 +254,7 @@ QCheckBox::indicator:unchecked{
             self.__optionsReread = True
             try:
                 self.ui_saveHdasToggle.setChecked(hpasteoptions.getOption('hpaste.transfer_assets', True))
+                self.ui_stripmeta.setChecked(hpasteoptions.getOption('hpaste.strip_metadata', False))
                 self.ui_ignoreWhenExists.setChecked(hpasteoptions.getOption('hpaste.ignore_hdas_if_already_defined', True))
                 self.ui_forcePreferred.setChecked(hpasteoptions.getOption('hpaste.force_prefer_hdas', False))
                 self.ui_ignore_houversion_warning.setChecked(hpasteoptions.getOption('hpaste.ignore_houversion_warning', False))
@@ -270,6 +275,8 @@ QCheckBox::indicator:unchecked{
             sender = self.sender()
             if sender is self.ui_saveHdasToggle:
                 hpasteoptions.setOption('hpaste.transfer_assets', state)
+            if sender is self.ui_stripmeta:
+                hpasteoptions.setOption('hpaste.strip_metadata', state)
             if sender is self.ui_ignoreWhenExists:
                 hpasteoptions.setOption('hpaste.ignore_hdas_if_already_defined', state)
             if sender is self.ui_forcePreferred:

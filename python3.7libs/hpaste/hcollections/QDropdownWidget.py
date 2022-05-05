@@ -176,7 +176,7 @@ class QDropdownWidget(QWidget):
             self.__proxyModel.setSourceModel(self.__model)
 
     # def _proxyModel(self):
-    #	return self.__proxyModel
+    #    return self.__proxyModel
 
     @Slot()
     def resizeToTable(self):

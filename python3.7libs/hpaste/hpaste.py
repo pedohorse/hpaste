@@ -1,6 +1,10 @@
 import os
 
-import hou
+try:
+    import hou
+except ImportError:
+    import sys
+    print('hou not found! proceeding with limited functionality', file=sys.stderr)
 
 import json
 import re
@@ -20,6 +24,13 @@ try:
     from . import hpasteoptions as opt
 except:
     print("Hpaste: Failed to load options, using defaults")
+
+try:
+    from .hipmetastrip import clean_meta
+except ImportError:
+    def clean_meta(x):  # type: (bytes) -> bytes
+        return x
+
 
 try:
     from typing import Callable, Tuple, Optional
@@ -142,7 +153,7 @@ def getDeserializer(enctype: Optional[str] = None, **kwargs) -> Callable[[bytes]
         raise RuntimeError('Encryption type unsupported. try updating hpaste')
 
 
-def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -> str:
+def nodesToString(nodes, transfer_assets=None, encryption_type=None, clean_metadata=None, **kwargs) -> str:
     """
         nodes : hou.NetworkMovableItems
     algtype:
@@ -150,6 +161,8 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
         1 - new h16 serialization, much prefered!
     :param nodes:
     :param transfer_assets:
+    :param encryption_type: type of encryption to use
+    :param clean_metadata: whether to clean code from metadata or no. this does not
     :return:
     """
 
@@ -228,9 +241,10 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
                 code = f.read()
         finally:
             os.close(fd)
-    # THIS WAS IN FORMAT VERSION 1 code = binascii.b2a_qp(code)
+
+        if clean_metadata or clean_metadata is None and opt is not None and opt.getOption('hpaste.strip_metadata', False):
+            code = clean_meta(code)
     code = serialize(code)
-    # pprint(code)
 
     data = dict()
     data['algtype'] = algtype
@@ -254,6 +268,30 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, **kwargs) -
     stringdata = base64.urlsafe_b64encode(bz2.compress(json.dumps(data).encode('UTF-8')))
 
     return stringdata.decode('UTF-8')
+
+
+def stringToData(s: str, key=None) -> (dict, Optional[Callable[[bytes], bytes]]):  # TODO: use this in stringToNodes
+    s = s.encode('UTF-8')  # ununicode. there should not be any unicode in it anyways
+    try:
+        data = json.loads(bz2.decompress(base64.urlsafe_b64decode(s)).decode('UTF-8'))
+    except Exception as e:
+        raise RuntimeError("input data is either corrupted or just not a nodecode: " + repr(e))
+
+    # check version
+    formatVersion = data['version']
+    if formatVersion > current_format_version[0]:
+        raise RuntimeError("unsupported version of data format. Try updating hpaste to the latest version")
+    if data.get('version.minor', 0) > current_format_version[1]:
+        print('HPaste: Warning!! snippet has later format version than hpaste. Consider updating hpaste to the latest version')
+    if data.get('signed', False):
+        print('HPaste: Warning!! this snippet seem to be signed, but this version of HPaste has no idea how to check signatures! so signature check will be skipped!')
+
+    try:
+        deserializer = getDeserializer(enctype=data.get('encryptionType', None), key=key, **(data.get('encryptionData', None) or {}))
+    except NoKeyError:
+        deserializer = None
+
+    return data, deserializer
 
 
 def stringToNodes(s: str, hou_parent=None, ne=None, ignore_hdas_if_already_defined=None, force_prefer_hdas=None, override_network_position=None, key=None):

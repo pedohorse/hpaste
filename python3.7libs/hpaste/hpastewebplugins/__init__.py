@@ -20,8 +20,8 @@ def rescanPlugins():
         try:
             newmodule = importlib.import_module(".".join((__name__, fn)))
             importlib.reload(newmodule)
-        except:
-            print("hpaste web plugins: failed to load module %s" % fn)
+        except Exception as e:
+            print("hpaste web plugins: failed to load module {} because of: {}".format(fn, str(e)))
             continue
         pluginModuleList.append(newmodule)
         for name, obj in inspect.getmembers(newmodule):

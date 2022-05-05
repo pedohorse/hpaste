@@ -41,7 +41,7 @@ def doTest(cycles=1):
 
     # totaltimes={}
     # for k in times:
-    #	if k not in totaltimes:totaltimes[k]=0
+    #     if k not in totaltimes:totaltimes[k]=0
     print('------------------------------\n')
     for k in times:
         print("%s :" % k)

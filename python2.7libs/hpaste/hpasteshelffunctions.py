@@ -11,9 +11,17 @@ except:
     from PySide import QtCore as qtc
 
 from .hpaste import stringToNodes, nodesToString, InvalidContextError, WrongKeyLengthError, WrongKeyError, NoKeyError
+from .QSnippetDetailsWidget import QSnippetDetailsWidget
 from .hpasteweb import webPack, webUnpack
 
 from . import hpasteoptions
+
+
+def get_clipboard_text():
+    if hou.applicationVersion()[0] > 15:
+        return hou.ui.getTextFromClipboard()
+    qapp = QApplication.instance()
+    return qapp.clipboard().text()
 
 
 def hcopyweb():
@@ -22,6 +30,10 @@ def hcopyweb():
         nodes = hou.selectedItems()
     except:
         nodes = hou.selectedNodes()
+
+    if len(nodes) == 0:
+        hou.ui.displayMessage("No nodes are selected!", severity=hou.severityType.Error)
+        return
 
     enctype = hpasteoptions.getOption('hpasteweb.encryption_type', 'None')
     key = None
@@ -71,10 +83,7 @@ def hcopyweb():
 
 def hpasteweb(pane=None):
     qapp = QApplication.instance()
-    if hou.applicationVersion()[0] > 15:
-        s = hou.ui.getTextFromClipboard()
-    else:
-        s = qapp.clipboard().text()
+    s = get_clipboard_text().strip()
 
     if isinstance(qapp, QApplication):
         qapp.setOverrideCursor(qtc.Qt.WaitCursor)
@@ -129,4 +138,15 @@ def hpasteweb(pane=None):
     hou.ui.setStatusMessage("Success: Nodes pasted!")
 
 
-# hpasteweb(kwargs['pane'])
+def hpaste_inspect_tool(kwargs):
+    try:
+        parent = hou.qt.mainWindow()
+    except:
+        parent = hou.ui.mainQtWindow()
+
+    w = QSnippetDetailsWidget(parent)
+    surl = get_clipboard_text().strip()
+    if '@' in surl:  # sanity check, just to not paste completely random things
+        w.set_inspected_url(surl)
+
+    w.show()
