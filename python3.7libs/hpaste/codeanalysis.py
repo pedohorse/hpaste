@@ -27,7 +27,7 @@ pyimports = re.compile(br'(?:from(?:\s|\\\s)+'
                        br'(?P<imp>\w+(?:(?:\\\n\s*)?\.(?:\\\n\s*)?\w+)*(?:(?:\s|\\\s)*,(?:\s|\\\s)*\w+(?:(?:\\\n\s*)?\.(?:\\\n\s*)?\w+)*)*)', re.MULTILINE)  # TODO: this doesnt capture unicode imports as we work with binary
 
 
-nodeinit = re.compile(b'(\\w+(?:/\\w+)?)\\.init\0(?:type\s+=\s+(\w+))?')
+nodeinit = re.compile(b'(\\w+(?:/\\w+)*)\\.init\0(?:type\\s+=\\s+(\\w+))?')
 
 statmeta = re.compile(br'stat\s*'
                       br'\{'
@@ -165,15 +165,24 @@ andmorethings'''
 
 
 def _test_scan_for_nodes():
-    text = b'''HouLC\x1a1033600bbf0626e4915092bb9909geo1/merge11.parm\0{
+    text1 = b'''HouLC\x1a1033600bbf0626e4915092bb9909geo1/merge11.parm\0{
 version 0.8
 }
 HouLC\x1a1033600bbb0626e4915076ac4ae7geo1/merge11.userdata\0\0\0\0\1\0
 ___Version___\0\0\0\x03\0\x0818.5.408HouLC\x1a1033600bbc0626e491507277fc71geo1/group9.init\0type = groupcreate
 matchesdef = 0
 HouLC\x1a1033600bbd0626e4915015968140geo1/group9.def\0sopflags sopflags = '''
-    test = _scan_for_nodes(text, {})
+
+    text2 = b'''0707070000010000000006660000000000000000010000001423446663300005300000000036vellumsolver1/dopnet1/forces/popwind1.init\0type = popwind
+matchesdef = 1
+0707070000010000000006660000000000000000010000001423446663300005200000000703vellumsolver1/dopnet1/forces/popwind1.def\0comment ""
+position -0.286053 3.28347
+connectornextid 1'''
+    test = _scan_for_nodes(text1, {})
     assert test == [('geo1/group9', 'groupcreate')], test
+
+    test = _scan_for_nodes(text2, {})
+    assert test == [('vellumsolver1/dopnet1/forces/popwind1', 'popwind')], test
 
 
 def _test_scan_author_meta():
