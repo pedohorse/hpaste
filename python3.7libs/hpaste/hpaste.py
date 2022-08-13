@@ -13,8 +13,14 @@ import binascii
 import base64
 import bz2
 
-from Crypto.Cipher import AES
-from Crypto import Random as CRandom
+crypto_available = True
+try:
+    from Crypto.Cipher import AES
+    from Crypto import Random as CRandom
+except Exception:  # not just import error, in case of buggy h19.5p3.9 it's syntax error
+    crypto_available = False
+    AES = Random = CRandom = None
+
 import struct
 
 import tempfile
@@ -102,8 +108,10 @@ def getChildContext(node, houver):
 
 
 def getSerializer(enctype: Optional[str] = None, **kwargs) -> Tuple[Optional[dict], Callable[[bytes], bytes]]:  # TODO: makes more sense for serializer to return str
-    rng = CRandom.new()
     if enctype == 'AES':
+        if not crypto_available:
+            raise RuntimeError('PyCrypto is not available, cannot encrypt/decrypt')
+        rng = CRandom.new()
         key = kwargs['key']
         mode = kwargs.get('mode', AES.MODE_CBC)
         iv = kwargs.get('iv', rng.read(AES.block_size))
@@ -126,6 +134,8 @@ def getSerializer(enctype: Optional[str] = None, **kwargs) -> Tuple[Optional[dic
 
 def getDeserializer(enctype: Optional[str] = None, **kwargs) -> Callable[[bytes], bytes]:
     if enctype == 'AES':
+        if not crypto_available:
+            raise RuntimeError('PyCrypto is not available, cannot encrypt/decrypt')
         key = kwargs['key']
         if key is None:
             raise NoKeyError('no decryption key provided for encryption type AES')

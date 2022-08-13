@@ -1,7 +1,12 @@
 import hou
 import random
 import string
-from Crypto.Cipher import AES  # just for blocksize and constants
+crypto_available = True
+try:
+    from Crypto.Cipher import AES  # just for blocksize and constants
+except Exception:  # not just import error, in case of buggy h19.5p3.9 it's syntax error
+    crypto_available = False
+    AES = None
 
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore as qtc
@@ -35,6 +40,9 @@ def hcopyweb():
     key = None
     encparms = {}
     if enctype == 'AES-CBC':
+        if not crypto_available:
+            hou.ui.displayMessage("PyCrypto seem to be broken in your version of houdini, cannot encrypt/decrypt")
+            return
         key = ''.join([random.choice(string.ascii_letters + string.digits) for x in range(AES.block_size)])
         encparms = {'mode': AES.MODE_CBC}
         enctype = 'AES'
