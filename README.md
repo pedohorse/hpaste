@@ -3,13 +3,14 @@ simple plain text snippet exchange for Houdini
 
 for simple and fast exchange of node packs through any messenger
 
-**Hpaste** works/tested for **Houdini 19.0, 18.5, 18.0, 17.5, 17.0, 16.5, 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
-**HCollections** should work in **Houdini 19.0 18.x, 17.x, 16.x, 15.5** with both Qt4 and Qt5  
+**Hpaste** works/tested for **Houdini 19.5, 19.0, 18.5, 18.0, 17.5, 17.0, 16.5, 16.0, 15.5**. Should work also for 15.0 and maybe even less, to the point when Qt appeared in Houdini
+**HCollections** should work in **Houdini 19.5, 19.0, 18.5, 18.0, 17.x, 16.x, 15.5** with both Qt4 and Qt5  
 Though new features like **Inspector** are made without Qt4 backwards compatibility, therefore they won't work in qt4 versions of houdini 17 and older
 
-Works for both python2 and python3 builds. however there are some early 18.5 and 18.0 python3 builds that lack certain libs, but that bug has been fixed in later builds.
+Works for both python2 and python3 builds. however there are some early 18.5 and 18.0 python3 builds that lack certain libs, but that bug has been fixed in later builds.  
 
-**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 353**
+**Note: 19.5.303 production build has a bug in it's version of PyCrypto, so cryptography does not work. Hope SideFX fixes it in the next build.**  
+**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 353**  
 
 You can read a bit more about it in here:
 * https://cgallin.blogspot.com/2017/09/hpaste.html

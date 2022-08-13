@@ -200,12 +200,19 @@ def nodesToString(nodes, transfer_assets=None, encryption_type=None, clean_metad
                 newcode = re.sub(r'# Code to establish connections for.+\n.+\n', '# filtered lines\n', newcode, 1)
             code += newcode
     elif algtype == 1 or algtype == 2:
-        if transfer_assets: # added in version 2.1
+        if transfer_assets:  # added in version 2.1
             # scan for nonstandard asset definitions
             hfs = os.environ['HFS']
+            already_stashed = set()
             for elem in nodes:
-                if not isinstance(elem, hou.Node): continue
+                if not isinstance(elem, hou.Node):
+                    continue
                 for node in [elem] + list(elem.allSubChildren()):
+                    if not isinstance(node, hou.Node):
+                        continue
+                    if node.type().nameComponents() in already_stashed:
+                        continue
+                    already_stashed.add(node.type().nameComponents())
                     definition = node.type().definition()
                     if definition is None:
                         continue
