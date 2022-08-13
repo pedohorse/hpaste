@@ -8,8 +8,8 @@ for simple and fast exchange of node packs through any messenger
 
 Works for both python2 and python3 builds. however there are some early 18.5 and 18.0 python3 builds that lack certain libs, but that bug has been fixed in later builds.  
 
-**Note: 19.5.303 production build has a bug in it's version of PyCrypto, so cryptography does not work. Hope SideFX fixes it in the next build.**
-**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 353**
+**Note: 19.5.303 production build has a bug in it's version of PyCrypto, so cryptography does not work. Hope SideFX fixes it in the next build.**  
+**Note: 18.0.348 production build is known to have Qt issues, which seems to be solved starting from build 353**  
 
 You can read a bit more about it in here:
 * https://cgallin.blogspot.com/2017/09/hpaste.html
