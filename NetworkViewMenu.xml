@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mainMenu>
+    <menuBar>
+        <subMenu id="edit_menu">
+            <actionItem id="h.pane.wsheet.tool:hcopyweb">
+                <label>HCopy Web</label>
+                <insertAfter>paste</insertAfter>
+            </actionItem>
+            <actionItem id="h.pane.wsheet.tool:hpasteweb">
+                <label>HPaste Web</label>
+                <insertAfter>h.pane.wsheet.tool:hcopyweb</insertAfter>
+            </actionItem>
+        </subMenu>
+    </menuBar>
+</mainMenu>
