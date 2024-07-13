@@ -25,8 +25,35 @@ def get_clipboard_text():
     return qapp.clipboard().text()
 
 
-def hcopyweb():
+def set_clipboard_text(s):
+    if hou.applicationVersion()[0] > 15:
+        hou.ui.copyTextToClipboard(s)
+    else:
+        qapp = QApplication.instance()
+        qapp.clipboard().setText(s)
+
+
+def show_waiting_cursor():
+    if (20, 5) < hou.applicationVersion():
+        # qt bug in 20.5.278 causes crash
+        #  TODO: set upper version bound when fix released
+        return
     qapp = QApplication.instance()
+    if isinstance(qapp, QApplication):
+        qapp.setOverrideCursor(qtc.Qt.WaitCursor)
+
+
+def restore_cursor():
+    if (20, 5) < hou.applicationVersion():
+        # qt bug in 20.5.278 causes crash
+        #  TODO: set upper version bound when fix released
+        return
+    qapp = QApplication.instance()
+    if isinstance(qapp, QApplication):
+        qapp.restoreOverrideCursor()
+
+
+def hcopyweb():
     try:
         nodes = hou.selectedItems()
     except:
@@ -59,33 +86,26 @@ def hcopyweb():
         hou.ui.displayMessage("Error: %s" % str(e), severity=hou.severityType.Error)
         return
 
-    if isinstance(qapp, QApplication):
-        qapp.setOverrideCursor(qtc.Qt.WaitCursor)
+    show_waiting_cursor()
     try:
         s = webPack(s)
     except Exception as e:
         hou.ui.displayMessage(str(e), severity=hou.severityType.Error, title='error')
         return
     finally:
-        if isinstance(qapp, QApplication):
-            qapp.restoreOverrideCursor()
+        restore_cursor()
 
     # append key to snippet
     if enctype is not None:
         s = key + '!' + s
-    if hou.applicationVersion()[0] > 15:
-        hou.ui.copyTextToClipboard(s)
-    else:
-        qapp.clipboard().setText(s)
+    set_clipboard_text(s)
     hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
 
 
 def hpasteweb(pane=None):
-    qapp = QApplication.instance()
     s = get_clipboard_text().strip()
 
-    if isinstance(qapp, QApplication):
-        qapp.setOverrideCursor(qtc.Qt.WaitCursor)
+    show_waiting_cursor()
 
     # check for compression key
     key = None
@@ -97,8 +117,7 @@ def hpasteweb(pane=None):
         hou.ui.displayMessage(str(e), severity=hou.severityType.Error, title='error')
         return
     finally:
-        if isinstance(qapp, QApplication):
-            qapp.restoreOverrideCursor()
+        restore_cursor()
 
     geonode = None
     for _ in range(2):
