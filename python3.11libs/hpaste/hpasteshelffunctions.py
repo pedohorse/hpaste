@@ -25,7 +25,7 @@ def get_clipboard_text():
     return qapp.clipboard().text()
 
 
-def set_clipboard_test(s):
+def set_clipboard_text(s):
     if hou.applicationVersion()[0] > 15:
         hou.ui.copyTextToClipboard(s)
     else:
@@ -98,7 +98,7 @@ def hcopyweb():
     # append key to snippet
     if enctype is not None:
         s = key + '!' + s
-    set_clipboard_test(s)
+    set_clipboard_text(s)
     hou.ui.setStatusMessage("Success: Cloud link copied to clipboard!")
 
 
