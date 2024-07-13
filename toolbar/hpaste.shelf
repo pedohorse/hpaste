@@ -124,16 +124,26 @@ except ImportError:
     from PySide.QtCore import Qt
 
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget
+try:
+    from hpaste.hpasteshelffunctions import show_waiting_cursor, restore_cursor
+except ImportError:
+    def show_waiting_cursor():
+        qapp = QApplication.instance()
+        if isinstance(qapp, QApplication):
+            qapp.setOverrideCursor(Qt.WaitCursor)
+
+    def restore_cursor():
+        qapp = QApplication.instance()
+        if isinstance(qapp, QApplication):
+            qapp.restoreOverrideCursor()
 
 
 def do(kwargs):
-    qapp = QApplication.instance()
     pane=kwargs['pane']
     if(pane is None or not isinstance(pane,hou.NetworkEditor)):
         return
 
-    if isinstance(qapp, QApplication):
-        qapp.setOverrideCursor(Qt.WaitCursor)
+    show_waiting_cursor()
     try:
         mainwindow=hou.qt.mainWindow()
     except:
@@ -142,8 +152,7 @@ def do(kwargs):
     try:
         wid=HPasteCollectionWidget(mainwindow)
     finally:
-        if isinstance(qapp, QApplication):
-            qapp.restoreOverrideCursor()
+        restore_cursor()
     
     wid.move(QCursor.pos())
     wid.setNetworkEditor(pane)
