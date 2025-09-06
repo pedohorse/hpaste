@@ -8,8 +8,12 @@ except Exception:  # not just import error, in case of buggy h19.5p3.9 it's synt
     crypto_available = False
     AES = None
 
-from PySide2.QtWidgets import QApplication
-from PySide2 import QtCore as qtc
+try:
+    from PySide6.QtWidgets import QApplication
+    from PySide6 import QtCore as qtc
+except ImportError:
+    from PySide2.QtWidgets import QApplication
+    from PySide2 import QtCore as qtc
 
 from .hpaste import stringToNodes, nodesToString, InvalidContextError, WrongKeyLengthError, WrongKeyError, NoKeyError
 from .QSnippetDetailsWidget import QSnippetDetailsWidget

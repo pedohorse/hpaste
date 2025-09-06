@@ -18,9 +18,9 @@
 
   <tool name="hcopy" label="HCopy" icon="hpaste-copy">
     <script scriptType="python"><![CDATA[try:
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 except:
-    from PySide.QtGui import QApplication
+    from PySide2.QtWidgets import QApplication
 
 import hpaste
 
@@ -54,9 +54,9 @@ do()]]></script>
 
   <tool name="hpaste" label="HPaste" icon="hpaste-paste">
     <script scriptType="python"><![CDATA[try:
-    from PySide2.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 except:
-    from PySide.QtGui import QApplication
+    from PySide2.QtWidgets import QApplication
 
 import hpaste
 import hpaste.hpasteoptions as opt
@@ -116,12 +116,13 @@ hpasteweb(kwargs['pane'])
 
   <tool name="hpastecollection" label="Collection" icon="hpaste-collections">
     <script scriptType="python"><![CDATA[try:
+    from PySide6.QtGui import QCursor
+    from PySide6.QtWidgets import QInputDialog, QApplication
+    from PySide6.QtCore import Qt
+except ImportError:
     from PySide2.QtGui import QCursor
     from PySide2.QtWidgets import QInputDialog, QApplication
     from PySide2.QtCore import Qt
-except ImportError:
-    from PySide.QtGui import QCursor, QInputDialog, QApplication
-    from PySide.QtCore import Qt
 
 from hpaste.hpastecollectionwidget import HPasteCollectionWidget
 try:
